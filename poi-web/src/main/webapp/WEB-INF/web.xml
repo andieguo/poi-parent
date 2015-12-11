@@ -1,0 +1,45 @@
+<!DOCTYPE web-app PUBLIC
+ "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd" >
+
+<web-app>
+	<display-name>Archetype Created Web Application</display-name>
+
+	<!-- 加载Spring框架时从以下路径加载配置文件 -->
+	<context-param>
+	    <param-name>contextConfigLocation </param-name>
+	    <param-value>/WEB-INF/classes/applicationContext.xml</param-value>
+	</context-param>
+
+	<!-- 在web容器启动的时候加载spring框架 -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>  
+    </listener>
+    
+    <!-- Jersey+Spring集成，将Jersey容器中的Bean交给Spring管理，这样可以在Resource实体Bean中注入Bean -->
+	<servlet>
+		<servlet-name>JerseyServlet</servlet-name>
+		<servlet-class>com.sun.jersey.spi.spring.container.servlet.SpringServlet</servlet-class>
+		<init-param>
+			<param-name>com.sun.jersey.config.property.packages</param-name>
+			<param-value>com.andieguo.poi.resource</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<servlet>
+		<servlet-name>PoiServlet</servlet-name>
+		<servlet-class>com.andieguo.poi.servlet.PoiServlet</servlet-class>
+	</servlet>
+	
+	<servlet-mapping>
+		<servlet-name>JerseyServlet</servlet-name>
+		<url-pattern>/rest/*</url-pattern>
+	</servlet-mapping>
+
+	<servlet-mapping>
+		<servlet-name>PoiServlet</servlet-name>
+		<url-pattern>/servlet/poi</url-pattern>
+	</servlet-mapping>
+	
+</web-app>

@@ -1,0 +1,305 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<style type="text/css">
+	body, html,#allmap {width: 100%;height: 100%;overflow: hidden;margin:0;}
+	#l-map{height:100%;width:78%;float:left;border-right:2px solid #bcbcbc;}
+	#r-result{height:100%;width:20%;float:left;}
+</style>
+<style type="text/css">
+	/* page 分页样式 */
+	.page{margin:10px auto;padding-left:5%;font-size:12px;}
+	.page ul li{float: left;height: 22px;line-height: 22px;cursor: pointer;list-style:none;}
+	.page ul li:hover,li.pagenumber:hover{color:#F66;}
+	.page .pageInfo{margin-left: 5px;}
+	.page .pagenumber{margin-left:-40px;}
+	.page .start{width:54px;  padding:0 10px 0 0;text-align:right; height:22px; line-height:22px; display:block; text-align:right;background:url(page/first.png) no-repeat;}
+	.page .start_off{width:54px; padding:0 6px 0 0; text-align:right; background:url(page/first_off.png) no-repeat; font-family:Arial,Helvetica,sans-serif;}
+	.page .first{width:54px; padding:0 8px 0 0; height:22px; line-height:22px; display:block; text-align:right; background:url(page/prev.png) no-repeat;}
+	.page .first_off{width:54px; padding:0 8px 0 0; text-align:right; background:url(page/prev_off.png) no-repeat; font-family:Arial,Helvetica,sans-serif;}
+	.page .fleft{background:url(page/left.png); width:5px;}
+	.page .fcenter,.pagenumber li.nowPage{background:url(page/right.png); padding:0 5px;}
+	.page .fright{background:url(page/right.png) right; width:5px;}
+	.page .next{width:54px;margin-left:8px;padding:0px; height:22px; line-height:22px; display:block; text-align:left; background:url(page/next.png) no-repeat;}
+	.page .next_off{width:54px;margin-left:8px;padding:0px; text-align:left; background:url(page/next_off.png) no-repeat; font-family:Arial,Helvetica,sans-serif;}
+	.page .end{width:54px;margin-left:8px; padding:0 0 0 8px; height:22px; line-height:22px; display:block; text-align:left; background:url(page/last.png) no-repeat;}
+	.page .end_off{width:54px;margin-left:8px; padding:0 0 0 8px; text-align:left; background:url(page/last_off.png) no-repeat; font-family:Arial,Helvetica,sans-serif;}
+	.page .pagenumber li{color:#000; font-size:12px; font-family:Arial,Helvetica,sans-serif;}
+	.page .pagenumber li.nowPage{color: #F70707;font-weight: bold;font-size: 14px;}
+	.page select{padding:2px; height:22px; border:1px #CCC solid; background:#FFF; -moz-border-radius:5px; -webkit-border-radius:5px; border-radius:5px;}
+	#totalPage,#currentPage{color:red;font-weight: bold;}
+</style>
+
+<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+<script type="text/javascript" src="js/json2.js"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=ymoG6K7SgEWSvoAP2hOySvlQ"></script>
+<title>本地搜索的结果面板</title>
+</head>
+<body>
+	<div class="page" style="width:100%;float: top;">
+			<ul>
+			   <li class="start">首页&nbsp;&nbsp;</li>
+			   <li class="first">上一页</li>
+			   <li class="pagenumber">
+			   	  <ul>
+			   	   <li class="fleft"/>
+			   	   <li class="fcenter">1</li>
+			   	   <li class="fcenter">2</li>
+			   	   <li class="fcenter">3</li>
+			   	   <li class="fcenter">4</li>
+			   	   <li class="fcenter">5</li>
+			   	   <li class="fcenter">6</li>
+			   	   <li class="fcenter">7</li>
+			   	   <li class="fcenter">8</li>
+			   	   <li class="fcenter">9</li>
+			   	   <li class="fcenter">10</li>
+			   	   <li class="fright"/>
+			   	  </ul>
+			   </li>
+			   <li class="next">下一页</li>
+			   <li class="end">尾页</li>
+               <li class="start" id="totalpage">0</li>
+               <li class="end" id="total">0</li>
+			</ul>
+			</div>
+
+<div id="l-map"></div>
+<div id="r-result"></div>
+
+</body>
+</html>
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        //$("li.nowPage").attr("class", "fcenter");
+
+        $("li.fcenter").click(function () {
+            if (BMAP_STATUS_SUCCESS == local.getStatus()) {
+
+            }
+
+            //local.search("酒店");
+            //alert($(this).text());
+            $("li.nowPage").attr("class", "fcenter");
+            //            $("li.nowPage").removeClass();
+            //            $("li.nowPage").addClass("fcenter");
+            var pagesize = local.getPageCapacity();
+            //alert(pagesize);
+            gotopage(parseInt($(this).text(), 10));
+            $(this).removeClass();
+            $(this).addClass("nowPage");
+        });
+
+    });
+
+    function search(name) {
+        local.search(name);
+    }
+
+    function gotopage(index) {
+        local.gotoPage(index);
+    }
+
+	var i=0;
+	var j=0;
+    var province = "北京";
+    var city = "北京";
+    var type = "餐馆";
+    var poiresultsjson = null;
+    var totalpage = null;
+    var currentpage = 1;//默认为第1页
+    var total = null;
+
+    window.openInfoWinFuns = null;
+    
+    function POI(title,lng, lat,address) {
+		this.lng = lng;
+		this.lat = lat;
+		this.address = address;
+		this.title = title; 
+	}
+    function POIResult(province,city,type,page,poi){
+    	this.province = province;
+    	this.city = city;
+    	this.type = type;
+    	this.page = page;
+    	this.poi = poi;
+    }
+    var options = {
+		pageCapacity:20,
+        onSearchComplete: function (results) {
+			console.log("results:"+results);
+            // 判断状态是否正确
+            if (local.getStatus() == BMAP_STATUS_SUCCESS) {
+                var s = [];
+                var poiResults;
+                var POILists = [];
+                //s.push('<div id="tnt_pagination"><span class="disabled_tnt_pagination">前10页</span><a href="#1">1</a><a href="#2">2</a><a href="#3">3</a><span class="zzjs">4</span><a href="#5">5</a><a href="#forwaed">后10页</a></div>');
+                s.push('<div style="font-family: arial,sans-serif; border: 1px solid rgb(153, 153, 153); font-size: 12px;">');
+                s.push('<div style="background: none repeat scroll 0% 0% rgb(255, 255, 255);">');
+                s.push('<ol style="list-style: none outside none; padding: 0pt; margin: 0pt;">');
+                openInfoWinFuns = [];
+                totalpage = results.getNumPages();
+                total = results.getNumPois();
+				console.log("totalpage:"+totalpage);
+				console.log("total:"+total);
+                $("#totalpage").text(totalpage);
+                $("#total").text(total);
+                for (var i = 0; i < results.getCurrentNumPois(); i++) {
+                    var marker = addMarker(results.getPoi(i).point, i);
+                    var openInfoWinFun = addInfoWindow(marker, results.getPoi(i), i);
+                    openInfoWinFuns.push(openInfoWinFun);
+                    // 默认打开第一标注的信息窗口
+                    var selected = "";
+                    if (i == 0) {
+                        selected = "background-color:#f0f0f0;";
+                        openInfoWinFun();
+                    }
+                    s.push('<li id="list' + i + '" style="margin: 2px 0pt; padding: 0pt 5px 0pt 3px; cursor: pointer; overflow: hidden; line-height: 17px;' + selected + '" onclick="openInfoWinFuns[' + i + ']()">');
+                    s.push('<span style="width:1px;background:url(red_labels.gif) 0 ' + (2 - i * 20) + 'px no-repeat;padding-left:10px;margin-right:3px"> </span>');
+                    s.push('<span style="color:#00c;text-decoration:underline">' + results.getPoi(i).title.replace(new RegExp(results.keyword, "g"), '<b>' + results.keyword + '</b>') + '</span>');
+                    s.push('<span style="color:#666;"> - ' + results.getPoi(i).address + '</span>');
+                    s.push('<span style="color:#666;"> - ' + results.getPoi(i).point.lat + '/' + results.getPoi(i).point.lng + '</span>');
+                    //latlng = results.getPoi(i).point.lat + '/' + results.getPoi(i).point.lng;
+                    s.push('</li>');
+                    s.push('');
+                    POILists.push(new POI(results.getPoi(i).title,results.getPoi(i).point.lng,results.getPoi(i).point.lat,results.getPoi(i).address));
+                }
+                poiResults = new POIResult(province,city,type,currentpage, POILists);
+                poiresultsjson = JSON.stringify(poiResults);
+				console.log("poiresultsjson:",poiresultsjson);
+                requestServlet(poiresultsjson);
+                s.push('</ol></div></div>');
+                document.getElementById("r-result").innerHTML = s.join("");
+            }
+        }
+    };
+
+    // 添加标注
+    function addMarker(point, index) {
+        var myIcon = new BMap.Icon("http://api.map.baidu.com/img/markers.png", new BMap.Size(23, 25), {
+            offset: new BMap.Size(10, 25),
+            imageOffset: new BMap.Size(0, 0 - index * 25)
+        });
+        var marker = new BMap.Marker(point, { icon: myIcon });
+        map.addOverlay(marker);
+        return marker;
+    }
+    // 添加信息窗口
+    function addInfoWindow(marker, poi, index) {
+        var maxLen = 10;
+        var name = null;
+        if (poi.type == BMAP_POI_TYPE_NORMAL) {
+            name = "地址：  "
+        } else if (poi.type == BMAP_POI_TYPE_BUSSTOP) {
+            name = "公交：  "
+        } else if (poi.type == BMAP_POI_TYPE_SUBSTOP) {
+            name = "地铁：  "
+        }
+        // infowindow的标题
+        var infoWindowTitle = '<div style="font-weight:bold;color:#CE5521;font-size:14px">' + poi.title + '</div>';
+        // infowindow的显示信息
+        var infoWindowHtml = [];
+        infoWindowHtml.push('<table cellspacing="0" style="table-layout:fixed;width:100%;font:12px arial,simsun,sans-serif"><tbody>');
+        infoWindowHtml.push('<tr>');
+        infoWindowHtml.push('<td style="vertical-align:top;line-height:16px;width:38px;white-space:nowrap;word-break:keep-all">' + name + '</td>');
+        infoWindowHtml.push('<td style="vertical-align:top;line-height:16px">' + poi.address + ' </td>');
+        infoWindowHtml.push('</tr>');
+        infoWindowHtml.push('</tbody></table>');
+        var infoWindow = new BMap.InfoWindow(infoWindowHtml.join(""), { title: infoWindowTitle, width: 200 });
+        var openInfoWinFun = function () {
+            marker.openInfoWindow(infoWindow);
+            for (var cnt = 0; cnt < maxLen; cnt++) {
+                if (!document.getElementById("list" + cnt)) { continue; }
+                if (cnt == index) {
+                    document.getElementById("list" + cnt).style.backgroundColor = "#f0f0f0";
+                } else {
+                    document.getElementById("list" + cnt).style.backgroundColor = "#fff";
+                }
+            }
+        }
+        marker.addEventListener("click", openInfoWinFun);
+        return openInfoWinFun;
+    }
+    
+    // 百度地图API功能:入口
+    var map = new BMap.Map("l-map"); // 创建Map实例
+    map.centerAndZoom("北京", 13);
+    var local = new BMap.LocalSearch(map, options);
+    //gotopage(38);
+    local.search(type);
+    
+    var provinces = [];//构建一个二维数组
+    var cities = [];
+	$.getJSON("js/city.json",function(data){  
+		//console.log("data:"+data);
+		//console.log("length:"+data["城市代码"].length);
+		for(var i=0;i<data["城市代码"].length;i++){
+			var province = data["城市代码"][i]["省"];
+			provinces.push(province);
+			//console.log("省："+province);
+			var cityList = data["城市代码"][i]["市"];
+			//console.log("city:"+cityList.length);
+		    cities[i] = [];
+			for(var j=0;j<cityList.length;j++){
+				var city = cityList[j]["市名"];
+				//console.log("市名："+city);
+				cities[i][j]=city;
+			}
+		}
+		console.log("provinces:"+provinces);
+		console.log("provinces.size:"+cities.length);
+		console.log("cities[0]:"+cities[0]);
+		console.log("cities[0].size:"+cities[0].length);
+    })
+	
+	function requestServlet(data) {
+		var urlStr = "/poi-web/servlet/poi";
+		//调用JQuery提供的Ajax方法 
+		$.ajax({
+			type : "POST",
+			url : urlStr,
+			data : data,
+			dataType : "json",//此处要设置成jason 
+			success : callback,
+			error:function()
+			{  
+		    	alert("系统出现问题");      
+			}  
+		});//回调函数 
+	}
+
+	function callback(jasonObj) {
+		console.log("obj:"+jasonObj);
+		var obj = eval(jasonObj);//将String转换为json对象
+		console.log("status:"+obj.status+",page:"+obj.page);
+		currentpage = obj.page;
+		if(obj.status == 1){
+			if(currentpage < totalpage-1){//结束一个城市的查询
+				currentpage = currentpage + 1;
+				window.setTimeout(gotopage(currentpage),3000);
+			}else if(j<cities[i].length){//结束一个省的查询
+				currentpage = 1;totalpage=0;
+				province = provinces[i];
+				city = cities[i][++j];
+				console.log("====="+city+"=====");
+			    map.centerAndZoom(city, 13);
+			    local = new BMap.LocalSearch(map, options);
+			    local.search(type);
+			}else if(i<provinces.length){//开始下一个省的循环
+				currentpage = 1;totalpage=0;
+				j = 0;
+				province = provinces[++i];
+				console.log("=1=1=1=1="+province+"=1=1=1=1=");
+				city = cities[i++][j];
+			    map.centerAndZoom(city, 13);
+			    local = new BMap.LocalSearch(map, options);
+			    local.search(type);
+			}
+		}
+	}
+
+</script>
+
