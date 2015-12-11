@@ -36,11 +36,19 @@
 				<artifactId>poi-base</artifactId>
 				<version>${project.version}</version>
 			</dependency>
+			<!-- log4j -->
+			<dependency>
+				<groupId>log4j</groupId>
+				<artifactId>log4j</artifactId>
+				<version>${log4j.version}</version>
+			</dependency>
+			<!-- json -->
 			<dependency>
 				<groupId>org.json</groupId>
 				<artifactId>json</artifactId>
 				<version>${json.version}</version>
 			</dependency>
+			<!-- servlet -->
 			<dependency>
 				<groupId>javax.servlet</groupId>
 				<artifactId>servlet-api</artifactId>
@@ -84,7 +92,6 @@
 				<artifactId>spring-web</artifactId>
 				<version>${spring.version}</version>
 			</dependency>
-
 			<!-- Jersery+spring -->
 			<dependency>
 				<groupId>com.sun.jersey</groupId>
