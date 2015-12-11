@@ -1,22 +1,21 @@
 <?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>com.andieguo.poi</groupId>
-    <artifactId>poi-parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
-  </parent>
-  <groupId>com.andieguo.poi</groupId>
-  <artifactId>poi-persistence</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <name>poi-persistence</name>
-  <url>http://maven.apache.org</url>
-  <dependencies>
-  		<dependency>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.andieguo.poi</groupId>
+		<artifactId>poi-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>poi-persistence</artifactId>
+	<name>poi-persistence</name>
+	<url>http://maven.apache.org</url>
+	<dependencies>
+		<dependency>
 			<groupId>com.andieguo.poi</groupId>
 			<artifactId>poi-base</artifactId>
-		</dependency>		
+		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -46,4 +45,23 @@
 			<artifactId>mysql-connector-java</artifactId>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<!-- 跳过测试 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+			<!-- 使用JDK1.7编译 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
+			<!-- 设置资源文件的编码方式 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
 </project>

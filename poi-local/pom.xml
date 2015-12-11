@@ -8,9 +8,7 @@
 		<artifactId>poi-parent</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
-	<groupId>com.andieguo.poi</groupId>
 	<artifactId>poi-local</artifactId>
-	<version>1.0-SNAPSHOT</version>
 	<name>poi-local</name>
 	<url>http://maven.apache.org</url>
 	<dependencies>
@@ -23,4 +21,18 @@
 			<artifactId>poi-base</artifactId>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<!-- 使用JDK1.7编译 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
+			<!-- 设置资源文件的编码方式 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
 </project>
