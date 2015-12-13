@@ -153,6 +153,7 @@ public class RestDownload {
 			Exchanger<Integer> exchanger = new Exchanger<Integer>();//子线程与主线程交换数据
 			List<POI> poiList = poiDao.findByType(0);
 			List<String> cityList = new ArrayList<String>();
+			cityList.add("荆州");
 			cityList.add("北京");
 			cityList.add("武汉");
 			int sum = poiList.size()*cityList.size();
