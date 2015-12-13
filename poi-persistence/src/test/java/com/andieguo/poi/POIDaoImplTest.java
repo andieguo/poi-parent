@@ -29,6 +29,7 @@ public class POIDaoImplTest extends TestCase {
 	}
 	
 	public void testFindByType(){
+		System.out.println(poiDao.findByType(0).size());
 		for(POI poi:poiDao.findByType(0)){
 			System.out.println(poi);
 		}

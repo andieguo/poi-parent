@@ -16,7 +16,7 @@ public class Rest {
 		InputStreamReader in = null;
 		URL url = new URL(surl);
 		connection = (HttpURLConnection) url.openConnection();
-		connection.setReadTimeout(5000);
+		connection.setReadTimeout(10000);
 		connection.setRequestMethod(type);
 		connection.setRequestProperty("ContentType", "text;charset=utf-8");
 		if (data != null) {
@@ -43,9 +43,9 @@ public class Rest {
 	
 	public static void main(String[] args) {
 		try {
-			String result = Rest.poiRest("银行", 0, 10, "全国");
-			System.out.println(result);
+			String result = Rest.poiRest("银行", 0, 10, "鹤壁");
 			JSONObject jsonObj = new JSONObject(result);
+			System.out.println(jsonObj.toString());
 			System.out.println(jsonObj.getInt("status"));
 			System.out.println(jsonObj.getString("message"));
 			System.out.println(jsonObj.getInt("total"));

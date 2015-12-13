@@ -4,24 +4,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.andieguo.poi.util.FileUtil;
 
-public class ProvinceDaoImpl implements ProvinceDao {
+public class CityDaoImpl implements CityDao {
 
-	public List<String> findAll() throws JSONException {
+	@Override
+	public List<String> findAll() {
 		// TODO Auto-generated method stub
 		List<String> list = new ArrayList<String>();
-		String result = FileUtil.readFile(getClass().getClassLoader().getResourceAsStream("province.json"));
+		String result = FileUtil.readFile(getClass().getClassLoader().getResourceAsStream("city.json"));
 		JSONObject jsonObj = new JSONObject(result);
-		JSONArray array = jsonObj.getJSONArray("provinces");
+		JSONArray array = jsonObj.getJSONArray("城市代码");
 		for(int i=0;i<array.length();i++){
 			JSONObject obj = array.getJSONObject(i);
-			list.add(obj.getString("name"));
+			JSONArray cityArray = obj.getJSONArray("市");
+			for(int j=0;j<cityArray.length();j++){
+				JSONObject cityObj = cityArray.getJSONObject(j);
+				list.add(cityObj.getString("市名"));
+			}
 		}
 		return list;
 	}
@@ -29,8 +33,9 @@ public class ProvinceDaoImpl implements ProvinceDao {
 	@SuppressWarnings("resource")
 	public static void main(String[] args) {
 		ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
-		ProvinceDao provinceDao = (ProvinceDao) context.getBean("provinceDao");
-		System.out.println(provinceDao.findAll().size());
+		CityDao cityDao = (CityDao) context.getBean("cityDao");
+		System.out.println(cityDao.findAll().size());
+		System.out.println(cityDao.findAll());
 	}
 
 }

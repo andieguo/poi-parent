@@ -1,7 +1,15 @@
 package com.andieguo.poi.util;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutorService;
@@ -14,28 +22,44 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.andieguo.poi.dao.POIDao;
+import com.andieguo.poi.dao.ProvinceDao;
 import com.andieguo.poi.pojo.POI;
 
 public class RestDownload {
-	public Logger logger;
-	public RestDownload(){
+	private Logger logger;
+	private Properties properties;
+
+	public RestDownload() throws Exception{
 		//从类路径下加载配置文件
 		PropertyConfigurator.configure(this.getClass().getClassLoader().getResourceAsStream("log4j/log4j.properties"));
 		logger = Logger.getLogger(RestDownload.class);
+		//在家目录生成临时文件
+		File file = new File(Constants.MKDIRPATH);
+		if(!file.exists()) file.mkdirs();
+		file = new File(Constants.LOCAL_PATH);
+		if(!file.exists()) file.createNewFile();
+		logger.info(Constants.LOCAL_PATH);
+		InputStream input = new FileInputStream(file);
+		properties = PropertiesUtil.loadFromInputStream(input);
 	}
 
 	@SuppressWarnings("resource")
 	public static void main(String[] args) {
-		RestDownload restDownload = new RestDownload();
-		ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
-		POIDao poiDao = (POIDao) context.getBean("poiDao");
-		restDownload.executeJob(poiDao);
+		try {
+			RestDownload restDownload = new RestDownload();
+			ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
+			POIDao poiDao = (POIDao) context.getBean("poiDao");
+			ProvinceDao provinceDao = (ProvinceDao) context.getBean("provinceDao");
+			restDownload.executeJob(poiDao,provinceDao);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
-	public int downPage(POI poi,Integer page) throws Exception {
+	public synchronized int downPage(POI poi,String city,Integer page) throws Exception {
 		int sum = 0;
 		String query = poi.getPoikey();
-		String city = "武汉";
 		String type = poi.getPoivalue();
 		String result = Rest.poiRest(query, 20, page, city);
 		JSONObject resultJSON = new JSONObject(result);//JSON格式化
@@ -60,6 +84,8 @@ public class RestDownload {
 			if(!file.exists()){
 				FileUtil.saveJSON(resultJSON.toString().getBytes(), file.getPath());
 				logger.info("成功下载："+file.getPath());
+			}else{
+				logger.info("文件已存在："+file.getPath());
 			}
 		}
 		return sum;
@@ -69,26 +95,34 @@ public class RestDownload {
 		public CountDownLatch downLatch;
 		public Exchanger<Integer> exchanger;   
 		public POI poi;
-		public QueryRunnable(POI poi,CountDownLatch downLatch,Exchanger<Integer> exchanger){
+		public String city;
+		public QueryRunnable(POI poi,String city,CountDownLatch downLatch,Exchanger<Integer> exchanger){
 			this.poi = poi;
 			this.downLatch = downLatch;
 			this.exchanger = exchanger;
+			this.city = city;
 		}
 
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub
 			try {
-				int sum = downPage(poi, 0);
-				for (int i = 1; i < sum; i++) {
-					downPage(poi, i);
+				if(properties.getProperty(city+"&"+poi.getPoivalue()) == null){
+					int sum = downPage(poi,city, 0);
+					for (int i = 1; i < sum; i++) {
+						downPage(poi,city, i);
+					}
+					logger.info(city+"--->"+poi.getPoivalue()+"-->下载结束");
+					properties.setProperty(city+"&"+poi.getPoivalue(), "done");
+					//PropertiesUtil.store(properties, out);
+				}else{
+					logger.info(city+"--->"+poi.getPoivalue()+"-->已经下载");
 				}
-				logger.info(poi.getPoivalue()+"-->下载结束");
 				exchanger.exchange(1);// 与主线程交换信息
 				downLatch.countDown();// 计数减少1
 			} catch (Exception e) {
 				e.printStackTrace();
-				logger.error(e);
+				logger.error("",e);
 			}
 		}
 	}
@@ -104,6 +138,7 @@ public class RestDownload {
 			try {
 				logger.info("FinnishJobRunable在等待所有的读历史数据线程执行完毕！");
 				this.downLatch.await();
+				close();
 				logger.info("FinnishJobRunable释放连接资源！");
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -112,16 +147,21 @@ public class RestDownload {
 		}
 	}
 	
-	public void executeJob(POIDao poiDao){
+	public void executeJob(POIDao poiDao,ProvinceDao provinceDao){
 		try{
-			ExecutorService service = Executors.newCachedThreadPool(); //创建一个线程池
+			ExecutorService service = Executors.newSingleThreadExecutor(); //创建线程池：区别newSingleThreadExecutor与newCachedThreadPool
 			Exchanger<Integer> exchanger = new Exchanger<Integer>();//子线程与主线程交换数据
 			List<POI> poiList = poiDao.findByType(0);
-			int sum = poiList.size();
+			List<String> cityList = new ArrayList<String>();
+			cityList.add("北京");
+			cityList.add("武汉");
+			int sum = poiList.size()*cityList.size();
 			CountDownLatch downLatch = new CountDownLatch(sum);
-			for (POI poi : poiList) {
-				QueryRunnable queryRunnable = new QueryRunnable(poi, downLatch,exchanger);
-				service.execute(queryRunnable);// 为线程池添加任务
+			for(String city:cityList){
+				for (POI poi : poiList) {
+					QueryRunnable queryRunnable = new QueryRunnable(poi,city,downLatch,exchanger);
+					service.execute(queryRunnable);// 为线程池添加任务
+				}
 			}
 			FinnishJobRunable finnishJobRunable = new FinnishJobRunable(downLatch);
 			service.execute(finnishJobRunable);// 为线程池添加任务
@@ -137,10 +177,33 @@ public class RestDownload {
 					logger.info(String.format("Progress: %s/%s",totalResult, sum));
 				}
 			}
-			service.shutdown();
+			service.shutdown();//关闭线程池
 		}catch(Exception e){
 			e.printStackTrace();
-			logger.error(e);
+			logger.error("",e);
+		}
+	}
+	
+	public void close() {
+		// TODO Auto-generated method stub
+		OutputStreamWriter writer = null;
+		OutputStream out = null;
+		try {
+			// String path = this.getClass().getResource(PATH).getPath();
+			out = new FileOutputStream(new File(Constants.LOCAL_PATH));
+			writer = new OutputStreamWriter(out, "UTF-8");
+			properties.store(writer, "update");
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error("", e);
+		} finally {
+			try {
+				if (writer != null) writer.close();
+				if (out != null) out.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+				logger.error("", e);
+			}
 		}
 	}
 }
