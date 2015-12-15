@@ -2,12 +2,7 @@ package com.andieguo.poi.util;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
@@ -21,26 +16,17 @@ import org.json.JSONObject;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import com.andieguo.poi.dao.CityDao;
 import com.andieguo.poi.dao.POIDao;
-import com.andieguo.poi.dao.ProvinceDao;
 import com.andieguo.poi.pojo.POI;
 
 public class RestDownload {
 	private Logger logger;
-	private Properties properties;
 
 	public RestDownload() throws Exception{
 		//从类路径下加载配置文件
 		PropertyConfigurator.configure(this.getClass().getClassLoader().getResourceAsStream("log4j/log4j.properties"));
 		logger = Logger.getLogger(RestDownload.class);
-		//在家目录生成临时文件
-		File file = new File(Constants.MKDIRPATH);
-		if(!file.exists()) file.mkdirs();
-		file = new File(Constants.LOCAL_PATH);
-		if(!file.exists()) file.createNewFile();
-		logger.info(Constants.LOCAL_PATH);
-		InputStream input = new FileInputStream(file);
-		properties = PropertiesUtil.loadFromInputStream(input);
 	}
 
 	@SuppressWarnings("resource")
@@ -49,8 +35,8 @@ public class RestDownload {
 			RestDownload restDownload = new RestDownload();
 			ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
 			POIDao poiDao = (POIDao) context.getBean("poiDao");
-			ProvinceDao provinceDao = (ProvinceDao) context.getBean("provinceDao");
-			restDownload.executeJob(poiDao,provinceDao);
+			CityDao cityDao = (CityDao) context.getBean("cityDao");
+			restDownload.executeJob(poiDao,cityDao);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -64,8 +50,8 @@ public class RestDownload {
 		String result = Rest.poiRest(query, 20, page, city);
 		JSONObject resultJSON = new JSONObject(result);//JSON格式化
 		String message = resultJSON.getString("message");
-		if(message.equals("ok")){
-			int total = resultJSON.getInt("total");
+		int total = resultJSON.getInt("total");
+		if(message.equals("ok") && total > 0){
 			sum = total/20 + 1;
 			File dataMkdir = new File(Constants.DATAPATH);
 			if(!dataMkdir.exists()){
@@ -92,13 +78,17 @@ public class RestDownload {
 	}
 	
 	public  class QueryRunnable implements Runnable{
+		public Properties properties;
 		public CountDownLatch downLatch;
+		public CountDownLatch cityDownLatch;
 		public Exchanger<Integer> exchanger;   
 		public POI poi;
 		public String city;
-		public QueryRunnable(POI poi,String city,CountDownLatch downLatch,Exchanger<Integer> exchanger){
+		public QueryRunnable(Properties properties,POI poi,String city,CountDownLatch downLatch,CountDownLatch cityDownLatch,Exchanger<Integer> exchanger){
+			this.properties = properties;
 			this.poi = poi;
 			this.downLatch = downLatch;
+			this.cityDownLatch = cityDownLatch;
 			this.exchanger = exchanger;
 			this.city = city;
 		}
@@ -109,22 +99,55 @@ public class RestDownload {
 			try {
 				if(properties.getProperty(city+"&"+poi.getPoivalue()) == null){
 					int sum = downPage(poi,city, 0);
-					for (int i = 1; i < sum; i++) {
-						downPage(poi,city, i);
+					if(sum >= 1){
+						for (int i = 1; i < sum; i++) {
+							downPage(poi,city, i);
+						}
+						logger.info(city+"--->"+poi.getPoivalue()+"-->下载结束");
+						properties.setProperty(city+"&"+poi.getPoivalue(), "done");
+					}else{
+						logger.info(city+"--->"+poi.getPoivalue()+"-->下载失败");
 					}
-					logger.info(city+"--->"+poi.getPoivalue()+"-->下载结束");
-					properties.setProperty(city+"&"+poi.getPoivalue(), "done");
-					//PropertiesUtil.store(properties, out);
 				}else{
 					logger.info(city+"--->"+poi.getPoivalue()+"-->已经下载");
 				}
 				exchanger.exchange(1);// 与主线程交换信息
+				cityDownLatch.countDown();
 				downLatch.countDown();// 计数减少1
 			} catch (Exception e) {
 				e.printStackTrace();
 				logger.error("",e);
 			}
 		}
+	}
+	
+	public class CityJobRunable implements Runnable{
+		public String city;
+		public Properties properties;
+		public File file;
+		public CountDownLatch downLatch;
+		public ExecutorService service;
+		public CityJobRunable(String city,CountDownLatch downLatch,Properties properties,File file,ExecutorService service){
+			this.city = city;
+			this.downLatch = downLatch;
+			this.properties = properties;
+			this.file = file;
+			this.service = service;
+		}
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			try {
+				logger.info(city+"--->在等待所有的爬取Baidu POI线程执行完毕！");
+				this.downLatch.await();
+				PropertiesUtil.store(properties,file);
+				logger.info(city+"--->保存记录点到日志文件！");
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
 	}
 	
 	public class FinnishJobRunable implements Runnable{
@@ -138,7 +161,6 @@ public class RestDownload {
 			try {
 				logger.info("FinnishJobRunable在等待所有的读历史数据线程执行完毕！");
 				this.downLatch.await();
-				close();
 				logger.info("FinnishJobRunable释放连接资源！");
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -147,22 +169,31 @@ public class RestDownload {
 		}
 	}
 	
-	public void executeJob(POIDao poiDao,ProvinceDao provinceDao){
+	public void executeJob(POIDao poiDao,CityDao cityDao){
 		try{
 			ExecutorService service = Executors.newSingleThreadExecutor(); //创建线程池：区别newSingleThreadExecutor与newCachedThreadPool
 			Exchanger<Integer> exchanger = new Exchanger<Integer>();//子线程与主线程交换数据
 			List<POI> poiList = poiDao.findByType(0);
-			List<String> cityList = new ArrayList<String>();
-			cityList.add("荆州");
-			cityList.add("北京");
-			cityList.add("武汉");
+			List<String> cityList = cityDao.findAll();
 			int sum = poiList.size()*cityList.size();
 			CountDownLatch downLatch = new CountDownLatch(sum);
+			CountDownLatch cityDownLatch = new CountDownLatch(poiList.size());
+			Properties properties = null;
+			File file = null;
 			for(String city:cityList){
+				//在家目录生成临时文件
+				file = new File(Constants.MKDIRPATH);
+				if(!file.exists()) file.mkdirs();
+				file = new File(Constants.MKDIRPATH + File.separator+"local_update_"+city+".properties");
+				if(!file.exists()) file.createNewFile();
+				InputStream input = new FileInputStream(file);
+				properties = PropertiesUtil.loadFromInputStream(input);
 				for (POI poi : poiList) {
-					QueryRunnable queryRunnable = new QueryRunnable(poi,city,downLatch,exchanger);
+					QueryRunnable queryRunnable = new QueryRunnable(properties,poi,city,downLatch,cityDownLatch,exchanger);
 					service.execute(queryRunnable);// 为线程池添加任务
 				}
+				CityJobRunable cityJobRunable = new CityJobRunable(city,cityDownLatch,properties,file,service);
+				service.execute(cityJobRunable);
 			}
 			FinnishJobRunable finnishJobRunable = new FinnishJobRunable(downLatch);
 			service.execute(finnishJobRunable);// 为线程池添加任务
@@ -185,26 +216,4 @@ public class RestDownload {
 		}
 	}
 	
-	public void close() {
-		// TODO Auto-generated method stub
-		OutputStreamWriter writer = null;
-		OutputStream out = null;
-		try {
-			// String path = this.getClass().getResource(PATH).getPath();
-			out = new FileOutputStream(new File(Constants.LOCAL_PATH));
-			writer = new OutputStreamWriter(out, "UTF-8");
-			properties.store(writer, "update");
-		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error("", e);
-		} finally {
-			try {
-				if (writer != null) writer.close();
-				if (out != null) out.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-				logger.error("", e);
-			}
-		}
-	}
 }

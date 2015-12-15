@@ -49,6 +49,27 @@ public class PropertiesUtil {
 		return properties;
 	}
 	
+	public static void store(Properties properties,File file) {
+		// TODO Auto-generated method stub
+		OutputStream out = null;
+		try {
+			out = new FileOutputStream(file);
+			store(properties, out);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally{
+			if(out!=null){
+				try {
+					out.close();//为什么没有执行关闭操作，store操作会将内存中的信息保存多次
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
 	public static void store(Properties properties,OutputStream output){//保存的时候用UTF-8保存
 		 OutputStreamWriter writer = null;
 		try {
