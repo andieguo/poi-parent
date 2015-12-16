@@ -2,7 +2,6 @@ package com.andieguo.poi.util;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
@@ -22,6 +21,7 @@ import com.andieguo.poi.pojo.POI;
 
 public class RestDownload {
 	private Logger logger;
+	private static volatile int count = 0;//线程安全
 
 	public RestDownload() throws Exception{
 		//从类路径下加载配置文件
@@ -50,31 +50,60 @@ public class RestDownload {
 		String result = Rest.poiRest(query, 20, page, city);
 		JSONObject resultJSON = new JSONObject(result);//JSON格式化
 		String message = resultJSON.getString("message");
-		int total = resultJSON.getInt("total");
-		if(message.equals("ok") && total > 0){
-			sum = total/20 + 1;
-			File dataMkdir = new File(Constants.DATAPATH);
-			if(!dataMkdir.exists()){
-				dataMkdir.mkdir();
+		if(message.equals("ok") ){//获取数据成功
+			int total = resultJSON.getInt("total");
+			if(total > 0){
+				sum = total/20 + 1;
+				File dataMkdir = new File(Constants.DATAPATH);
+				if(!dataMkdir.exists()){
+					dataMkdir.mkdir();
+				}
+				File cityMkdir = new File(dataMkdir.getPath()+File.separator+city);
+				if(!cityMkdir.exists()){
+					cityMkdir.mkdir();
+				}
+				File typeMkdir = new File(cityMkdir.getPath()+File.separator+type);
+				if(!typeMkdir.exists()){
+					typeMkdir.mkdir();
+				}
+				//保存到文本
+				File file = new File(typeMkdir.getPath()+File.separator+city+"-"+type+"-"+page+".json");
+				if(!file.exists()){
+					FileUtil.saveJSON(resultJSON.toString().getBytes(), file.getPath());
+					logger.info("成功下载："+file.getPath());
+				}else{
+					logger.info("文件已存在："+file.getPath());
+				}
 			}
-			File cityMkdir = new File(dataMkdir.getPath()+File.separator+city);
-			if(!cityMkdir.exists()){
-				cityMkdir.mkdir();
-			}
-			File typeMkdir = new File(cityMkdir.getPath()+File.separator+type);
-			if(!typeMkdir.exists()){
-				typeMkdir.mkdir();
-			}
-			//保存到文本
-			File file = new File(typeMkdir.getPath()+File.separator+city+"-"+type+"-"+page+".json");
-			if(!file.exists()){
-				FileUtil.saveJSON(resultJSON.toString().getBytes(), file.getPath());
-				logger.info("成功下载："+file.getPath());
-			}else{
-				logger.info("文件已存在："+file.getPath());
-			}
+		}else{
+			count ++ ;
+			logger.info("---------------------------------->拒绝访问:"+count);
+			if(count > 100) System.exit(0);
 		}
 		return sum;
+	}
+	
+	public class SkipRunnable implements Runnable{
+		public Exchanger<Integer> exchanger;   
+		public CountDownLatch downLatch;
+		public int num;
+
+		public SkipRunnable(CountDownLatch downLatch,Exchanger<Integer> exchanger,int num){
+			this.exchanger = exchanger;
+			this.downLatch = downLatch;
+			this.num = num;
+		}
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			try {
+				downLatch.countDown();// 计数减少1
+				exchanger.exchange(num);// 与主线程交换信息
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	public  class QueryRunnable implements Runnable{
@@ -97,7 +126,7 @@ public class RestDownload {
 		public void run() {
 			// TODO Auto-generated method stub
 			try {
-				if(properties.getProperty(city+"&"+poi.getPoivalue()) == null){
+				if(properties.getProperty(city+"&"+poi.getPoivalue()) == null){//城市配置文件中不存在记录
 					int sum = downPage(poi,city, 0);
 					if(sum >= 1){
 						for (int i = 1; i < sum; i++) {
@@ -124,12 +153,16 @@ public class RestDownload {
 	public class CityJobRunable implements Runnable{
 		public String city;
 		public Properties properties;
+		public Properties globalProperties;
+		public File globalFile;
 		public File file;
 		public CountDownLatch downLatch;
 		public ExecutorService service;
-		public CityJobRunable(String city,CountDownLatch downLatch,Properties properties,File file,ExecutorService service){
+		public CityJobRunable(String city,CountDownLatch downLatch,Properties globalProperties,File globalFile,Properties properties,File file,ExecutorService service){
 			this.city = city;
 			this.downLatch = downLatch;
+			this.globalProperties = globalProperties;
+			this.globalFile = globalFile;
 			this.properties = properties;
 			this.file = file;
 			this.service = service;
@@ -141,6 +174,7 @@ public class RestDownload {
 				logger.info(city+"--->在等待所有的爬取Baidu POI线程执行完毕！");
 				this.downLatch.await();
 				PropertiesUtil.store(properties,file);
+				PropertiesUtil.store(globalProperties, globalFile);
 				logger.info(city+"--->保存记录点到日志文件！");
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -178,22 +212,30 @@ public class RestDownload {
 			int sum = poiList.size()*cityList.size();
 			CountDownLatch downLatch = new CountDownLatch(sum);
 			CountDownLatch cityDownLatch = new CountDownLatch(poiList.size());
-			Properties properties = null;
-			File file = null;
+			//创建家目录文件夹
+			File home = new File(Constants.MKDIRPATH);
+			if(!home.exists()) home.mkdirs();
+			//在家目录生成全局配置文件
+			File globalFile = new File(Constants.MKDIRPATH + File.separator+"local_update_global.properties");
+			if(!globalFile.exists()) globalFile.createNewFile();
+			Properties globalProperties = PropertiesUtil.loadFromInputStream(new FileInputStream(globalFile));
 			for(String city:cityList){
-				//在家目录生成临时文件
-				file = new File(Constants.MKDIRPATH);
-				if(!file.exists()) file.mkdirs();
-				file = new File(Constants.MKDIRPATH + File.separator+"local_update_"+city+".properties");
-				if(!file.exists()) file.createNewFile();
-				InputStream input = new FileInputStream(file);
-				properties = PropertiesUtil.loadFromInputStream(input);
-				for (POI poi : poiList) {
-					QueryRunnable queryRunnable = new QueryRunnable(properties,poi,city,downLatch,cityDownLatch,exchanger);
-					service.execute(queryRunnable);// 为线程池添加任务
+				if(globalProperties.getProperty(city, null) == null){//值为NULL则继续，值为done则跳过
+					//在家目录生成城市配置文件
+					File file = new File(Constants.MKDIRPATH + File.separator+"local_update_"+city+".properties");
+					if(!file.exists()) file.createNewFile();
+					Properties properties = PropertiesUtil.loadFromInputStream(new FileInputStream(file));
+					for (POI poi : poiList) {
+						QueryRunnable queryRunnable = new QueryRunnable(properties,poi,city,downLatch,cityDownLatch,exchanger);
+						service.execute(queryRunnable);// 为线程池添加任务
+					}
+					//每次遍历完一次城市都要执行CityJobRunable
+					CityJobRunable cityJobRunable = new CityJobRunable(city,cityDownLatch,globalProperties,globalFile,properties,file,service);
+					service.execute(cityJobRunable);
+				}else{//执行skip线程，将任务数减(1*poiList.size())个,其中countdown是没有处理的
+					SkipRunnable skipRunnable = new SkipRunnable(downLatch, exchanger, poiList.size());
+					service.execute(skipRunnable);
 				}
-				CityJobRunable cityJobRunable = new CityJobRunable(city,cityDownLatch,properties,file,service);
-				service.execute(cityJobRunable);
 			}
 			FinnishJobRunable finnishJobRunable = new FinnishJobRunable(downLatch);
 			service.execute(finnishJobRunable);// 为线程池添加任务

@@ -37,7 +37,7 @@ public class Rest {
 	}
 	
 	public static String poiRest(String query,Integer pageSize,Integer pageNumber,String region) throws Exception{
-		String url = String.format("http://api.map.baidu.com/place/v2/search?ak=%s&output=json&query=%s&page_size=%d&page_num=%d&scope=1&region=%s", "115718263ae305054511732fe1d484d3",query,pageSize,pageNumber,region);
+		String url = String.format("http://api.map.baidu.com/place/v2/search?ak=%s&output=json&query=%s&page_size=%d&page_num=%d&scope=1&region=%s", "115718263ae305054511732fe1d484d33",query,pageSize,pageNumber,region);
 		return Rest.doRest("GET", url, null);
 	}
 	
