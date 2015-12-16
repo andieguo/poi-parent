@@ -21,7 +21,7 @@ public class PropertiesModify {
 			File[] files = home.listFiles();  
 			for (int i = 0; i < files.length; i++) { 
 				String name = files[i].getName().trim().toLowerCase();  
-                if (name.endsWith(".properties") && name.startsWith("local_update_") && files[i].length() > 0) {
+                if (name.endsWith(".properties") && name.startsWith("local_update_") && files[i].length() > 1024) {
                 	name = name.substring(name.lastIndexOf("_")+1,name.lastIndexOf("."));
                 	globalProperties.setProperty(name, "done");
                     System.out.println(name + "\t" + files[i].length());  

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.andieguo.poi</groupId>
 	<artifactId>poi-parent</artifactId>
@@ -70,6 +69,18 @@
 				<groupId>org.apache.poi</groupId>
 				<artifactId>poi-ooxml</artifactId>
 				<version>${poi.version}</version>
+			</dependency>
+			<!-- hbase -->
+			<dependency>
+				<groupId>org.apache.hbase</groupId>
+				<artifactId>hbase</artifactId>
+				<version>${hbase.version}</version>
+			</dependency>
+			<!-- hadoop -->
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-core</artifactId>
+				<version>${hadoop.version}</version>
 			</dependency>
 			<!-- Spring框架 -->
 			<dependency>
@@ -177,5 +188,7 @@
 		<module>poi-web</module>
 		<module>poi-persistence</module>
 		<module>poi-base</module>
-	</modules>
+    <module>poi-upload</module>
+    <module>poi-hbase</module>
+  </modules>
 </project>

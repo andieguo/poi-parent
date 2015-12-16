@@ -8,7 +8,7 @@
 	</parent>
 	<artifactId>poi-web</artifactId>
 	<packaging>war</packaging>
-	<name>poi-web Maven Webapp</name>
+	<name>poi-web</name>
 	<url>http://maven.apache.org</url>
 	<properties>
 		<junit.version>3.8.1</junit.version>
