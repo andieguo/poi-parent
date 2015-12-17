@@ -174,6 +174,7 @@ public class RestDownload {
 				logger.info(city+"--->在等待所有的爬取Baidu POI线程执行完毕！");
 				this.downLatch.await();
 				PropertiesUtil.store(properties,file);
+				globalProperties.setProperty(city, "done");//记录断点
 				PropertiesUtil.store(globalProperties, globalFile);
 				logger.info(city+"--->保存记录点到日志文件！");
 			} catch (InterruptedException e) {

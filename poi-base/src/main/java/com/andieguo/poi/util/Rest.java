@@ -37,7 +37,7 @@ public class Rest {
 	}
 	
 	public static String poiRest(String query,Integer pageSize,Integer pageNumber,String region) throws Exception{
-		String url = String.format("http://api.map.baidu.com/place/v2/search?ak=%s&output=json&query=%s&page_size=%d&page_num=%d&scope=1&region=%s", "115718263ae305054511732fe1d484d33",query,pageSize,pageNumber,region);
+		String url = String.format("http://api.map.baidu.com/place/v2/search?ak=%s&output=json&query=%s&page_size=%d&page_num=%d&scope=1&region=%s", "115718263ae305054511732fe1d484d3",query,pageSize,pageNumber,region);
 		return Rest.doRest("GET", url, null);
 	}
 	
@@ -49,9 +49,9 @@ public class Rest {
 			System.out.println(jsonObj.getInt("status"));
 			System.out.println(jsonObj.getString("message"));
 			System.out.println(jsonObj.getInt("total"));
-			JSONArray jsonArray;
 			if(jsonObj.getString("message").equals("ok")){
-				jsonArray = jsonObj.getJSONArray("results");
+				JSONArray jsonArray  = jsonObj.getJSONArray("results");
+				System.out.println(jsonArray.length());
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

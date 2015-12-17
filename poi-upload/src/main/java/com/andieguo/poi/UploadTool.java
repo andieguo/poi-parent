@@ -89,12 +89,12 @@ public class UploadTool {
 	
 	public static void main(String[] args) throws Exception {
 		UploadTool uploadTool = new UploadTool();
-		/**if (args.length < 2) {
-			//logger.info("Please input two number");
-			System.exit(2);
-		}
-		String localSrc = args[0];
-		String dst = args[1];**/
+//		if (args.length < 2) {
+//			//logger.info("Please input two number");
+//			System.exit(2);
+//		}
+//		String localSrc = args[0];
+//		String dst = args[1];
 		String localSrc = "C:\\Users\\andieguo\\poi-data\\北京";
 		String dst = "/user/hadoop/poi/北京";
 		Configuration conf = new Configuration();
