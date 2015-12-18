@@ -3,18 +3,20 @@ package com.andieguo.poi;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 
-public class HBaseUtil {
 
-	public static void create(String tableName, String... families) {
-		Configuration conf = HBaseConfiguration.create();
-		conf.set("hbase.zookeeper.quorum", "121.42.217.105");
+public class HBaseUtil {
+	private Configuration conf ;
+	public HBaseUtil(){
+		conf = ZHBaseConfiguration.getConfiguration();
+	}
+
+	public void create(String tableName, String... families) {
 		HBaseAdmin admin = null;
 		try {
 			admin = new HBaseAdmin(conf);
@@ -34,9 +36,7 @@ public class HBaseUtil {
 	}
 	
 
-	public static void put(String tabelName,String rowKey,String family,String qualifier,String value) {
-		Configuration conf = HBaseConfiguration.create();
-		conf.set("hbase.zookeeper.quorum", "121.42.217.105");
+	public void put(String tabelName,String rowKey,String family,String qualifier,String value) {
 		HTable table = null;
 		try {
 			table = new HTable(conf, tabelName);
@@ -49,10 +49,7 @@ public class HBaseUtil {
 		}
 	}
 	
-	public static void put(String tableName,byte[] rowkey,byte[] family,byte[] qualifier,byte[] value){
-		
-		Configuration conf = HBaseConfiguration.create();
-		conf.set("hbase.zookeeper.quorum", "121.42.217.105");
+	public void put(String tableName,byte[] rowkey,byte[] family,byte[] qualifier,byte[] value){
 		HTable table = null;
 		try {
 			table = new HTable(conf, tableName);
@@ -66,7 +63,8 @@ public class HBaseUtil {
 	}
 	
 	public static void main(String[] args) {
-		create("tb_admin","info","address");
+		HBaseUtil hbaseUtil = new HBaseUtil();
+		hbaseUtil.create("tb_poi","info");
 	}
 
 }
