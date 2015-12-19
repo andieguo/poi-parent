@@ -25,7 +25,9 @@ public class HBaseUtil {
 				System.out.println(tableName + "已经存在！");
 			} else {
 				for (String family : families) {
-					tableDescriptor.addFamily(new HColumnDescriptor(family));
+					HColumnDescriptor column = new HColumnDescriptor(family);
+					column.setMaxVersions(1);//不需要列的多个时间版本
+					tableDescriptor.addFamily(column);
 				}
 				admin.createTable(tableDescriptor);
 			}

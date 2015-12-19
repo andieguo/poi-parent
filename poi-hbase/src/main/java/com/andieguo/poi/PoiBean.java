@@ -8,6 +8,10 @@ public class PoiBean {
 	private String telephone;
 	private double lng;
 	private double lat;
+	private String city;
+	private String type;
+	private String geohash;
+	
 	public String getUid() {
 		return uid;
 	}
@@ -44,7 +48,26 @@ public class PoiBean {
 	public void setLat(double lat) {
 		this.lat = lat;
 	}
-	public PoiBean(String uid, String address, String name, String telephone, double lng, double lat) {
+	public String getCity() {
+		return city;
+	}
+	public void setCity(String city) {
+		this.city = city;
+	}
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
+	}
+	
+	public String getGeohash() {
+		return geohash;
+	}
+	public void setGeohash(String geohash) {
+		this.geohash = geohash;
+	}
+	public PoiBean(String uid, String address, String name, String telephone, double lng, double lat,String city,String type,String geohash) {
 		super();
 		this.uid = uid;
 		this.address = address;
@@ -52,14 +75,18 @@ public class PoiBean {
 		this.telephone = telephone;
 		this.lng = lng;
 		this.lat = lat;
+		this.city = city;
+		this.type = type;
+		this.geohash = geohash;
 	}
+	
 	public PoiBean() {
 		super();
 	}
+	
 	@Override
 	public String toString() {
-		return "PoiBean [uid=" + uid + ", address=" + address + ", name=" + name + ", telephone=" + telephone + ", lng=" + lng + ", lat=" + lat + "]";
+		return "PoiBean [uid=" + uid + ", address=" + address + ", name=" + name + ", telephone=" + telephone + ", lng=" + lng + ", lat=" + lat + ", city=" + city + ", type=" + type +", geohash=" + geohash + "]";
 	}
-	
 	
 }

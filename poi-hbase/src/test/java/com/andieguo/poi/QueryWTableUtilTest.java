@@ -6,6 +6,49 @@ import junit.framework.TestCase;
 
 public class QueryWTableUtilTest extends TestCase {
 
+	public void testQueryByNearbyAndtypeA(){
+		try {
+			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
+			List<PoiBean> poiBeans = queryHBaseUtil.findByNearbyAndtypeA("tb_poi", "餐饮服务", 39.983168, 116.376796);
+			for(PoiBean poiBean : poiBeans){
+				System.out.println(poiBean);
+			}
+			System.out.println("size------------->"+poiBeans.size());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void testQueryByNearbyAndtypeB(){
+		try {
+			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
+			List<PoiBean> poiBeans = queryHBaseUtil.findByNearbyAndtypeB("tb_poi", "餐饮服务","快餐", 39.983168, 116.376796);
+			for(PoiBean poiBean : poiBeans){
+				System.out.println(poiBean);
+			}
+			System.out.println("size------------->"+poiBeans.size());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void testQueryByNearbyAndtypeC(){
+		try {
+			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
+			List<PoiBean> poiBeans = queryHBaseUtil.findByNearbyAndtypeC("tb_poi", "餐饮服务","快餐","必胜客", 39.983168, 116.376796);
+			for(PoiBean poiBean : poiBeans){
+				System.out.println(poiBean);
+			}
+			System.out.println("size------------->"+poiBeans.size());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	
 	public void testQueryTypeA(){
 		try {
 			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
@@ -48,10 +91,24 @@ public class QueryWTableUtilTest extends TestCase {
 		}
 	}
 	
+	public void testQueryCityAndTypeA(){
+		try {
+			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
+			List<PoiBean> poiBeans = queryHBaseUtil.findByCityAndtypeA("tb_poi", "餐饮服务", "北京");
+			for(PoiBean poiBean : poiBeans){
+				System.out.println(poiBean);
+			}
+			System.out.println("size------------->"+poiBeans.size());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public void testQueryCityAndTypeC(){
 		try {
 			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
-			List<PoiBean> poiBeans = queryHBaseUtil.findByCityAndtypeC("tb_poi", "餐饮服务", "茶艺", "茶艺", "武汉");
+			List<PoiBean> poiBeans = queryHBaseUtil.findByCityAndtypeC("tb_poi", "餐饮服务","快餐","必胜客", "北京");
 			for(PoiBean poiBean : poiBeans){
 				System.out.println(poiBean);
 			}

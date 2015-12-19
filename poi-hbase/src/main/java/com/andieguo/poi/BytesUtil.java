@@ -16,28 +16,68 @@ public class BytesUtil {
 		}
 	}
 
-	public static int getByteSize(String... keys){
+	public static int getByteSize(int skipIndex,String... keys){
 		int length = 0;
-		for(String key : keys){
-			byte[] keyByte = md.digest(Bytes.toBytes(key));
+		for(int i=0;i<keys.length;i++){
+			byte[] keyByte = null;
+			if(i != skipIndex){
+				keyByte = md.digest(Bytes.toBytes(keys[i]));
+			}else{
+				keyByte = Bytes.toBytes(keys[i]);
+			}
 			length = length + keyByte.length;
 		}
 		return length;
 	}
 	
+	/**
+	 * 所有的keys均采用MD5进行散列存储
+	 * @param keys
+	 * @return
+	 */
 	public static byte[] startkeyGen(String... keys){
-		int length = getByteSize(keys);
+		return startkeyGen(-1,keys);
+	}
+	
+	/**
+	 * skipIndex位置的字符串跳过MD5进行散列存储
+	 * @param skipIndex
+	 * @param keys
+	 * @return
+	 */
+	public static byte[] startkeyGen(int skipIndex,String... keys){
+		int length = getByteSize(skipIndex,keys);
 		byte[] startkey = new byte[length];
 		int offset = 0;
-		for(String key : keys){
-			byte[] keyByte = md.digest(Bytes.toBytes(key));
+		byte[] keyByte = null;
+		for(int i=0;i<keys.length;i++){
+			if(i != skipIndex){
+				keyByte = md.digest(Bytes.toBytes(keys[i]));
+			}else{
+				keyByte = Bytes.toBytes(keys[i]);
+			}
 			offset = Bytes.putBytes(startkey, offset, keyByte, 0, keyByte.length);
 		}
 		return startkey;
 	}
 	
+	/**
+	 * 所有的keys均采用MD5进行散列存储
+	 * @param keys
+	 * @return
+	 */
 	public static byte[] endkeyGen(String... keys){
-		byte[] startkey = startkeyGen(keys);
+		return endkeyGen(-1,keys);
+	}
+	
+	/**
+	 * skipIndex位置的字符串跳过MD5进行散列存储
+	 * @param skipIndex
+	 * @param keys
+	 * @return
+	 */
+	public static byte[] endkeyGen(int skipIndex,String... keys){
+		byte[] startkey = startkeyGen(skipIndex,keys);
 		byte[] endkey = new byte[startkey.length];
 		System.arraycopy(startkey, 0, endkey, 0, endkey.length);
 		endkey[endkey.length - 1]++;
