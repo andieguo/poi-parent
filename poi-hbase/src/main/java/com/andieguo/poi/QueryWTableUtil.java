@@ -12,12 +12,14 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
+import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.filter.SubstringComparator;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import com.andieguo.poi.geohash.GeoHash;
+import com.andieguo.poi.util.DistanceUtil;
 
 /**
  * 宽表查询
@@ -33,6 +35,80 @@ public class QueryWTableUtil {
 		conf = ZHBaseConfiguration.getConfiguration();
 	}
 	
+	public List<PoiBean> findByCircleAndtypeALocal(String tableName,String typeA,double lat,double lng,double radius){
+		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
+		List<PoiBean> poiBeanList = new ArrayList<PoiBean>();
+		ResultScanner rs = null;
+		HTable table = null;
+		try {
+			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
+			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
+			table = new HTable(conf, tableName);
+			for(int i=0;i<adjacent.length;i++){
+				System.out.println(adjacent[i].toBase32());
+				byte[] startkey = BytesUtil.startkeyGen(typeA);
+				byte[] endkey = BytesUtil.endkeyGen(typeA);
+				Filter geohashfilter = new RowFilter(CompareOp.EQUAL, new SubstringComparator(adjacent[i].toBase32()));
+				Scan scan = new Scan(startkey, endkey);
+				scan.setFilter(geohashfilter);
+				rs = table.getScanner(scan);
+				putRow(poiBeans, rs);
+			}
+			//本地过滤
+			for(int j=0;j<poiBeans.size();j++){
+				PoiBean poiBean = poiBeans.get(j);
+				double distance = DistanceUtil.computeDistance(lat, lng, poiBean.getLat(), poiBean.getLng());
+				if(distance < radius){
+					poiBean.setDistance(distance);
+					poiBeanList.add(poiBean);
+				}
+			}
+			if (rs != null) rs.close();
+			if (table != null) table.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return poiBeanList;
+	}
+	
+	public List<PoiBean> findByCircleAndtypeA(String tableName,String typeA,double lat,double lng,double radius){
+		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
+		ResultScanner rs = null;
+		HTable table = null;
+		try {
+			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
+			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
+			table = new HTable(conf, tableName);
+			for(int i=0;i<adjacent.length;i++){
+				System.out.println(adjacent[i].toBase32());
+				byte[] startkey = BytesUtil.startkeyGen(typeA);
+				byte[] endkey = BytesUtil.endkeyGen(typeA);
+				Filter geohashfilter = new RowFilter(CompareOp.EQUAL, new SubstringComparator(adjacent[i].toBase32()));
+				Filter distancefilter = new DistanceFilter(lat, lng, radius);
+				FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
+				filterList.addFilter(geohashfilter);
+				filterList.addFilter(distancefilter);
+				Scan scan = new Scan(startkey, endkey);
+				scan.setFilter(filterList);
+				rs = table.getScanner(scan);
+				putRow(poiBeans, rs);
+			}
+			if (rs != null) rs.close();
+			if (table != null) table.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return poiBeans;
+	}
+	
+	/**
+	 * 测试成功：根据typeA查询(lat,lng)附近8个小方块区域的POI集合
+	 * @param tableName
+	 * @param typeA
+	 * @param lat
+	 * @param lng
+	 * @return
+	 */
 	public List<PoiBean> findByNearbyAndtypeA(String tableName,String typeA,double lat,double lng){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
@@ -58,7 +134,15 @@ public class QueryWTableUtil {
 		}
 		return poiBeans;
 	}
-	
+	/**
+	 * 测试成功：根据typeA+typeB查询(lat,lng)附近8个小方块区域的POI集合
+	 * @param tableName
+	 * @param typeA
+	 * @param typeB
+	 * @param lat
+	 * @param lng
+	 * @return
+	 */
 	public List<PoiBean> findByNearbyAndtypeB(String tableName,String typeA,String typeB,double lat,double lng){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
@@ -84,7 +168,16 @@ public class QueryWTableUtil {
 		}
 		return poiBeans;
 	}
-	
+	/**
+	 * 测试成功：根据typeA+typeB+typeC查询(lat,lng)附近8个小方块区域的POI集合
+	 * @param tableName
+	 * @param typeA
+	 * @param typeB
+	 * @param typeC
+	 * @param lat
+	 * @param lng
+	 * @return
+	 */
 	public List<PoiBean> findByNearbyAndtypeC(String tableName,String typeA,String typeB,String typeC,double lat,double lng){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
@@ -170,8 +263,40 @@ public class QueryWTableUtil {
 		}
 		return poiBeans;
 	}
-
-
+	/**
+	 * 测试成功：根据大类型获取所有的POI
+	 * @param tableName
+	 * @param typeA
+	 * @return
+	 */
+	public List<PoiBean> findBytypeA(String tableName,String typeA){
+		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
+		try {
+			byte[] startkey = BytesUtil.startkeyGen(typeA);
+			byte[] endkey = BytesUtil.endkeyGen(typeA);
+			poiBeans = putPoiBean(tableName, startkey, endkey);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return poiBeans;
+	}
+	/**
+	 * 测试成功：根据中类型获取所有的POI
+	 * @param tableName
+	 * @param typeA
+	 * @return
+	 */
+	public List<PoiBean> findBytypeB(String tableName,String typeA,String typeB){
+		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
+		try {
+			byte[] startkey = BytesUtil.startkeyGen(typeA,typeB);
+			byte[] endkey = BytesUtil.endkeyGen(typeA,typeB);
+			poiBeans = putPoiBean(tableName, startkey, endkey);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return poiBeans;
+	}
 	/**
 	 * 测试成功：根据小类型获取所有的POI
 	 * @param tableName
@@ -190,42 +315,6 @@ public class QueryWTableUtil {
 		return poiBeans;
 	}
 	
-	/**
-	 * 测试成功：根据中类型获取所有的POI
-	 * @param tableName
-	 * @param typeA
-	 * @return
-	 */
-	public List<PoiBean> findBytypeB(String tableName,String typeA,String typeB){
-		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
-		try {
-			byte[] startkey = BytesUtil.startkeyGen(typeA,typeB);
-			byte[] endkey = BytesUtil.endkeyGen(typeA,typeB);
-			poiBeans = putPoiBean(tableName, startkey, endkey);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return poiBeans;
-	}
-	
-	/**
-	 * 测试成功：根据大类型获取所有的POI
-	 * @param tableName
-	 * @param typeA
-	 * @return
-	 */
-	public List<PoiBean> findBytypeA(String tableName,String typeA){
-		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
-		try {
-			byte[] startkey = BytesUtil.startkeyGen(typeA);
-			byte[] endkey = BytesUtil.endkeyGen(typeA);
-			poiBeans = putPoiBean(tableName, startkey, endkey);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return poiBeans;
-	}
-
 	/**
 	 * 根据startkey和endkey查询数据并填充到PoiBean集合
 	 * @param tableName

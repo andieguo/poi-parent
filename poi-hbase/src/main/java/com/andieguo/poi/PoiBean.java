@@ -11,6 +11,7 @@ public class PoiBean {
 	private String city;
 	private String type;
 	private String geohash;
+	private double distance;
 	
 	public String getUid() {
 		return uid;
@@ -67,6 +68,12 @@ public class PoiBean {
 	public void setGeohash(String geohash) {
 		this.geohash = geohash;
 	}
+	public double getDistance() {
+		return distance;
+	}
+	public void setDistance(double distance) {
+		this.distance = distance;
+	}
 	public PoiBean(String uid, String address, String name, String telephone, double lng, double lat,String city,String type,String geohash) {
 		super();
 		this.uid = uid;
@@ -86,7 +93,7 @@ public class PoiBean {
 	
 	@Override
 	public String toString() {
-		return "PoiBean [uid=" + uid + ", address=" + address + ", name=" + name + ", telephone=" + telephone + ", lng=" + lng + ", lat=" + lat + ", city=" + city + ", type=" + type +", geohash=" + geohash + "]";
+		return "PoiBean [uid=" + uid + ", address=" + address + ", name=" + name + ", telephone=" + telephone + ", lng=" + lng + ", lat=" + lat + ", city=" + city + ", type=" + type +", geohash=" + geohash + ", distance=" + distance+"]";
 	}
 	
 }

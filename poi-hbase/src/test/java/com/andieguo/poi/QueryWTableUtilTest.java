@@ -6,6 +6,34 @@ import junit.framework.TestCase;
 
 public class QueryWTableUtilTest extends TestCase {
 
+	public void testQueryByCircleAndtypeA(){
+		try {
+			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
+			List<PoiBean> poiBeans = queryHBaseUtil.findByCircleAndtypeA("tb_poi", "餐饮服务", 39.983168, 116.376796,100);
+			for(PoiBean poiBean : poiBeans){
+				System.out.println(poiBean);
+			}
+			System.out.println("size------------->"+poiBeans.size());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void testQueryByCircleAndtypeALocal(){
+		try {
+			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
+			List<PoiBean> poiBeans = queryHBaseUtil.findByCircleAndtypeALocal("tb_poi", "餐饮服务", 39.983168, 116.376796,3000);
+			for(PoiBean poiBean : poiBeans){
+				System.out.println(poiBean);
+			}
+			System.out.println("size------------->"+poiBeans.size());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public void testQueryByNearbyAndtypeA(){
 		try {
 			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
