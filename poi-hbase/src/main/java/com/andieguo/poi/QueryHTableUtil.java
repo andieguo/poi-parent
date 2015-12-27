@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.HConnection;
+import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -20,10 +20,10 @@ import org.apache.hadoop.hbase.util.Bytes;
  */
 public class QueryHTableUtil {
 
-	private Configuration conf;
+	private HConnection connection;
 
 	public QueryHTableUtil() throws Exception {
-		conf = ZHBaseConfiguration.getConfiguration();
+		connection = HConnectionSingle.getHConnection();
 	}
 	
 	public List<PoiBean> findByCityAndtypeA(String tableName,String typeA,String city){
@@ -103,7 +103,7 @@ public class QueryHTableUtil {
 	 */
 	private List<PoiBean> putPoiBean(String tableName, byte[] startkey, byte[] endkey) throws IOException {
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
-		HTable table = new HTable(conf, tableName);
+		HTableInterface table = connection.getTable(tableName);
 		Scan scan = new Scan(startkey, endkey);
 		ResultScanner rs = table.getScanner(scan);
 		for (Result row : rs) {

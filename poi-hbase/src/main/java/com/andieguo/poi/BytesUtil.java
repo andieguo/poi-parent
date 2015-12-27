@@ -83,4 +83,9 @@ public class BytesUtil {
 		endkey[endkey.length - 1]++;
 		return endkey;
 	}
+	
+	public static void main(String[] args) {
+		//byte是一个字节保存的，有8个位，即8个0、1。
+		System.out.println(startkeyGen("城市").length);//16个byte（字节）
+	}
 }

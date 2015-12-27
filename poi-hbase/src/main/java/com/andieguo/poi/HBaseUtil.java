@@ -13,7 +13,7 @@ import org.apache.hadoop.hbase.client.Put;
 public class HBaseUtil {
 	private Configuration conf ;
 	public HBaseUtil(){
-		conf = ZHBaseConfiguration.getConfiguration();
+		conf = HConnectionSingle.getConfiguration();
 	}
 
 	public void create(String tableName, String... families) {

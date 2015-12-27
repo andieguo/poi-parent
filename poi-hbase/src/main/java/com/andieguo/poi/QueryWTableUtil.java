@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.HConnection;
+import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -17,6 +17,7 @@ import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.filter.SubstringComparator;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.log4j.Logger;
 
 import com.andieguo.poi.geohash.GeoHash;
 import com.andieguo.poi.util.DistanceUtil;
@@ -29,21 +30,24 @@ import com.andieguo.poi.util.DistanceUtil;
  */
 public class QueryWTableUtil {
 
-	private Configuration conf;
-
+	private HConnection connection;
+	@SuppressWarnings("unused")
+	private Logger logger;
+	
 	public QueryWTableUtil() throws Exception {
-		conf = ZHBaseConfiguration.getConfiguration();
+		connection = HConnectionSingle.getHConnection();
+		logger = Logger.getLogger(QueryWTableUtil.class);
 	}
 	
 	public List<PoiBean> findByCircleAndtypeALocal(String tableName,String typeA,double lat,double lng,double radius){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		List<PoiBean> poiBeanList = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
-		HTable table = null;
+		HTableInterface table = null;
 		try {
 			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
 			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
-			table = new HTable(conf, tableName);
+			table = connection.getTable(tableName);
 			for(int i=0;i<adjacent.length;i++){
 				System.out.println(adjacent[i].toBase32());
 				byte[] startkey = BytesUtil.startkeyGen(typeA);
@@ -74,11 +78,11 @@ public class QueryWTableUtil {
 	public List<PoiBean> findByCircleAndtypeA(String tableName,String typeA,double lat,double lng,double radius){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
-		HTable table = null;
+		HTableInterface table = null;
 		try {
 			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
 			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
-			table = new HTable(conf, tableName);
+			table = connection.getTable(tableName);
 			for(int i=0;i<adjacent.length;i++){
 				System.out.println(adjacent[i].toBase32());
 				byte[] startkey = BytesUtil.startkeyGen(typeA);
@@ -112,11 +116,11 @@ public class QueryWTableUtil {
 	public List<PoiBean> findByNearbyAndtypeA(String tableName,String typeA,double lat,double lng){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
-		HTable table = null;
+		HTableInterface table = null;
 		try {
 			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
 			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
-			table = new HTable(conf, tableName);
+			table = connection.getTable(tableName);
 			for(int i=0;i<adjacent.length;i++){
 				System.out.println(adjacent[i].toBase32());
 				byte[] startkey = BytesUtil.startkeyGen(typeA);
@@ -146,11 +150,11 @@ public class QueryWTableUtil {
 	public List<PoiBean> findByNearbyAndtypeB(String tableName,String typeA,String typeB,double lat,double lng){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
-		HTable table = null;
+		HTableInterface table = null;
 		try {
 			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
 			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
-			table = new HTable(conf, tableName);
+			table = connection.getTable(tableName);
 			for(int i=0;i<adjacent.length;i++){
 				System.out.println(adjacent[i].toBase32());
 				byte[] startkey = BytesUtil.startkeyGen(typeA,typeB);
@@ -181,11 +185,11 @@ public class QueryWTableUtil {
 	public List<PoiBean> findByNearbyAndtypeC(String tableName,String typeA,String typeB,String typeC,double lat,double lng){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
-		HTable table = null;
+		HTableInterface table = null;
 		try {
 			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
 			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
-			table = new HTable(conf, tableName);
+			table = connection.getTable(tableName);
 			for(int i=0;i<adjacent.length;i++){
 				System.out.println(adjacent[i].toBase32());
 				byte[] startkey = BytesUtil.startkeyGen(3,typeA,typeB,typeC,adjacent[i].toBase32());
@@ -325,7 +329,7 @@ public class QueryWTableUtil {
 	 */
 	public List<PoiBean> putPoiBean(String tableName, byte[] startkey, byte[] endkey) throws IOException {
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
-		HTable table = new HTable(conf, tableName);
+		HTableInterface table = connection.getTable(tableName);
 		Scan scan = new Scan(startkey, endkey);
 		ResultScanner rs = table.getScanner(scan);
 		putRow(poiBeans, rs);
@@ -336,7 +340,7 @@ public class QueryWTableUtil {
 	
 	public List<PoiBean> putPoiBean(String tableName, Filter filter,byte[] startkey, byte[] endkey) throws IOException {
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
-		HTable table = new HTable(conf, tableName);
+		HTableInterface table = connection.getTable(tableName);
 		Scan scan = new Scan(startkey, endkey);
 		scan.setFilter(filter);
 		ResultScanner rs = table.getScanner(scan);

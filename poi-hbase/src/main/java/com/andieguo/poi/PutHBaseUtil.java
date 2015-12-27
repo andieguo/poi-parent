@@ -6,12 +6,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.HConnection;
+import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -20,15 +19,12 @@ import com.andieguo.poi.util.FileUtil;
 
 public class PutHBaseUtil {
 	
-	private HTable table;
+	private HConnection connection;
 	@SuppressWarnings("unused")
 	private Logger logger;
 	
 	public PutHBaseUtil(String tableName) throws Exception{
-		Configuration conf = ZHBaseConfiguration.getConfiguration();
-		table = new HTable(conf, tableName);
-		//从类路径下加载配置文件
-		PropertyConfigurator.configure(this.getClass().getClassLoader().getResourceAsStream("log4j/log4j.properties"));
+		connection = HConnectionSingle.getHConnection();
 		logger = Logger.getLogger(PutHBaseUtil.class);
 	}
 	
@@ -40,7 +36,7 @@ public class PutHBaseUtil {
 	public void listFile(File file) throws Exception{
 		if(file.isFile()){//C:\Users\andieguo\poi-data\北京\餐饮服务;茶艺;茶艺\北京-餐饮服务;茶艺;茶艺-0.json
 			List<PoiBean> poiBeans = parseFile(file);
-			putWRow(poiBeans);
+			putWRow("tb_poi",poiBeans);
 		}else if(file.isDirectory()){//目录
 			File[] files = file.listFiles();  
 			for (int i = 0; i < files.length; i++) {
@@ -54,7 +50,8 @@ public class PutHBaseUtil {
 	 * @param poiBeans
 	 * @throws IOException
 	 */
-	public void putWRow(List<PoiBean> poiBeans) throws IOException {
+	public void putWRow(String tableName,List<PoiBean> poiBeans) throws IOException {
+		HTableInterface table = connection.getTable(tableName);
 		for(int j=0;j<poiBeans.size();j++){
 			PoiBean poiBean = poiBeans.get(j);
 			String[] types = poiBean.getType().split(";");
@@ -70,6 +67,7 @@ public class PutHBaseUtil {
 			putRow.add(Bytes.toBytes("info"), Bytes.toBytes("geohash"), Bytes.toBytes(poiBean.getGeohash()));
 			table.put(putRow);
 		}
+		if(table != null) table.close();
 	}
 	/**
 	 * 高表构建
@@ -77,7 +75,8 @@ public class PutHBaseUtil {
 	 * @param poiBeans
 	 * @throws IOException
 	 */
-	public void putHRow(List<PoiBean> poiBeans) throws IOException{
+	public void putHRow(String tableName,List<PoiBean> poiBeans) throws IOException{
+		HTableInterface table = connection.getTable(tableName);
 		for(int i=0;i<poiBeans.size();i++){
 			PoiBean poiBean = poiBeans.get(i);
 			String[] types = poiBean.getType().split(";");
@@ -96,6 +95,7 @@ public class PutHBaseUtil {
 				table.put(putRow);
 			}
 		}
+		if(table != null) table.close();
 	}
 	
 	/**
