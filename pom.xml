@@ -188,7 +188,8 @@
 		<module>poi-web</module>
 		<module>poi-persistence</module>
 		<module>poi-base</module>
-    <module>poi-upload</module>
-    <module>poi-hbase</module>
+	    <module>poi-upload</module>
+	    <module>poi-hbase</module>
+	    <module>poi-mapreduce</module>
   </modules>
 </project>

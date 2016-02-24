@@ -22,3 +22,7 @@
 		poi-persistence			POI类型数据处理
 		poi-local				读取百度数据到本地
 		poi-web 				REST服务提供
+		
+3、项目构建
+
+mvn archetype:generate -DgroupId=com.andieguo.poi -DartifactId=poi-mapreduce -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false -DarchetypeCatalog=local

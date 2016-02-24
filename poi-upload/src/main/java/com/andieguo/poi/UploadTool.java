@@ -96,7 +96,7 @@ public class UploadTool {
 //		String localSrc = args[0];
 //		String dst = args[1];
 		String localSrc = "C:\\Users\\andieguo\\poi-data\\北京";
-		String dst = "/user/hadoop/poi/北京";
+		String dst = "/user/hadoop/poi-data/北京";
 		Configuration conf = new Configuration();
 		conf.set("fs.default.name", "hdfs://master:9000");//很关键
 		FileSystem fs = FileSystem.get(conf);
