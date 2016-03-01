@@ -38,7 +38,7 @@ public final class GeoHash implements Comparable<GeoHash>, Serializable {
 
 	private BoundingBox boundingBox;
 
-	protected byte significantBits = 0;
+	public byte significantBits = 0;
 
 	protected GeoHash() {
 	}

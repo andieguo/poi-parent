@@ -20,6 +20,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.log4j.Logger;
 
 import com.andieguo.poi.geohash.GeoHash;
+import com.andieguo.poi.geohash.WGS84Point;
+import com.andieguo.poi.geohash.query.GeoHashCircleQuery;
 import com.andieguo.poi.util.DistanceUtil;
 
 /**
@@ -81,14 +83,16 @@ public class QueryWTableUtil {
 		ResultScanner rs = null;
 		HTableInterface table = null;
 		try {
-			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
-			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
+			WGS84Point center = new WGS84Point(lat,lng);
+			GeoHashCircleQuery geoHashCircleQuery = new GeoHashCircleQuery(center,radius);
+			List<GeoHash> geohashList = geoHashCircleQuery.getSearchHashes();
 			table = connection.getTable(tableName);
-			for(int i=0;i<adjacent.length;i++){
-				System.out.println(adjacent[i].toBase32());
+			for(GeoHash geohash : geohashList){
+				if(geohash.significantBits%5 != 0) geohash.significantBits = (byte) (5 + geohash.significantBits -geohash.significantBits % 5);
+				System.out.println(geohash.toBase32());
 				byte[] startkey = BytesUtil.startkeyGen(typeA);
 				byte[] endkey = BytesUtil.endkeyGen(typeA);
-				Filter geohashfilter = new RowFilter(CompareOp.EQUAL, new SubstringComparator(adjacent[i].toBase32()));
+				Filter geohashfilter = new RowFilter(CompareOp.EQUAL, new SubstringComparator(geohash.toBase32()));
 				Filter distancefilter = new DistanceFilter(lat, lng, radius);
 				FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);
 				filterList.addFilter(geohashfilter);
