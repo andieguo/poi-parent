@@ -33,6 +33,16 @@
 			<artifactId>poi-base</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>com.andieguo.poi</groupId>
+			<artifactId>poi-persistence</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.andieguo.poi</groupId>
+			<artifactId>poi-local</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 		</dependency>

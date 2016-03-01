@@ -66,7 +66,8 @@ public class HBaseUtil {
 	
 	public static void main(String[] args) {
 		HBaseUtil hbaseUtil = new HBaseUtil();
-		hbaseUtil.create("tb_poi","info");
+		hbaseUtil.create("gw-index","info");
+		hbaseUtil.create("gh-index","info");
 	}
 
 }

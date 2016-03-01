@@ -2,29 +2,42 @@ package com.andieguo.poi;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.hadoop.hbase.client.HConnection;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.log4j.Logger;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import com.andieguo.poi.dao.CityDao;
+import com.andieguo.poi.dao.POIDao;
 import com.andieguo.poi.geohash.GeoHash;
+import com.andieguo.poi.pojo.POI;
+import com.andieguo.poi.util.Constants;
+import com.andieguo.poi.util.ExcelWrite;
 import com.andieguo.poi.util.FileUtil;
+import com.andieguo.poi.util.Record;
 
 public class PutHBaseUtil {
 	
-	private HConnection connection;
 	@SuppressWarnings("unused")
 	private Logger logger;
+	private long poiNumber = 0;
+	private long fileNumber = 0;
+	/* excel column formate:column_#_width, excel中每一列的名称 */
+	public static final String[] RECORES_COLUMNS = new String[] { "timedifference_#_5000", "poiNumber_#_5000","fileNumber_#_5000" };
+	/* the column will display on xls files. must the same as the entity fields.对应上面的字段. */
+	public static final String[] RECORES_FIELDS = new String[] { "timedifference", "poiNumber","fileNumber" };
 	
-	public PutHBaseUtil(String tableName) throws Exception{
-		connection = HConnectionSingle.getHConnection();
+	public PutHBaseUtil() throws Exception{
 		logger = Logger.getLogger(PutHBaseUtil.class);
 	}
 	
@@ -33,14 +46,20 @@ public class PutHBaseUtil {
 	 * @param file
 	 * @throws Exception
 	 */
-	public void listFile(File file) throws Exception{
-		if(file.isFile()){//C:\Users\andieguo\poi-data\北京\餐饮服务;茶艺;茶艺\北京-餐饮服务;茶艺;茶艺-0.json
+	public void listFile(File file,String type,HTableInterface table) throws Exception{
+		if(file.exists() && file.isFile()){//C:\Users\andieguo\poi-data\北京\餐饮服务;茶艺;茶艺\北京-餐饮服务;茶艺;茶艺-0.json
 			List<PoiBean> poiBeans = parseFile(file);
-			putWRow("tb_poi",poiBeans);
-		}else if(file.isDirectory()){//目录
+			poiNumber = poiNumber + poiBeans.size();
+			fileNumber++;
+			if(type.equals("wtable")){
+				putWRow(table,poiBeans);
+			}else if(type.equals("htable")){
+				putHRow(table, poiBeans);
+			}
+		}else if(file.exists() && file.isDirectory()){//目录
 			File[] files = file.listFiles();  
 			for (int i = 0; i < files.length; i++) {
-				listFile(files[i]);//递归
+				listFile(files[i],type,table);//递归
 			}
 		}
 	}
@@ -50,8 +69,7 @@ public class PutHBaseUtil {
 	 * @param poiBeans
 	 * @throws IOException
 	 */
-	public void putWRow(String tableName,List<PoiBean> poiBeans) throws IOException {
-		HTableInterface table = connection.getTable(tableName);
+	public void putWRow(HTableInterface table,List<PoiBean> poiBeans) throws IOException {
 		for(int j=0;j<poiBeans.size();j++){
 			PoiBean poiBean = poiBeans.get(j);
 			String[] types = poiBean.getType().split(";");
@@ -67,7 +85,6 @@ public class PutHBaseUtil {
 			putRow.add(Bytes.toBytes("info"), Bytes.toBytes("geohash"), Bytes.toBytes(poiBean.getGeohash()));
 			table.put(putRow);
 		}
-		if(table != null) table.close();
 	}
 	/**
 	 * 高表构建
@@ -75,8 +92,8 @@ public class PutHBaseUtil {
 	 * @param poiBeans
 	 * @throws IOException
 	 */
-	public void putHRow(String tableName,List<PoiBean> poiBeans) throws IOException{
-		HTableInterface table = connection.getTable(tableName);
+	public void putHRow(HTableInterface table,List<PoiBean> poiBeans) throws IOException{
+		
 		for(int i=0;i<poiBeans.size();i++){
 			PoiBean poiBean = poiBeans.get(i);
 			String[] types = poiBean.getType().split(";");
@@ -95,7 +112,7 @@ public class PutHBaseUtil {
 				table.put(putRow);
 			}
 		}
-		if(table != null) table.close();
+		
 	}
 	
 	/**
@@ -127,5 +144,63 @@ public class PutHBaseUtil {
 			}
 		}
 		return poiBeans;
+	}
+	
+	public static void main(String[] args) throws Exception {
+		if(args.length == 2){
+			String type = args[0];
+			String tableName = args[1];
+			PutHBaseUtil putHBaseUtil = new PutHBaseUtil();
+			HTableInterface table = HConnectionSingle.getHConnection().getTable(tableName);
+			HBaseUtil hbaseUtil = new HBaseUtil();
+			hbaseUtil.create(tableName,"info");
+			@SuppressWarnings("resource")
+			ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
+			CityDao cityDao = (CityDao) context.getBean("cityDao");
+			POIDao poiDao = (POIDao) context.getBean("poiDao");
+			List<String> cityList = cityDao.findAll();
+			List<POI> poiList = poiDao.findByType(0);
+			List<Record> records = new ArrayList<Record>();
+			//遍历家目录下的poi-data目录
+			long starttime = System.currentTimeMillis();
+			for(String city : cityList){
+				for(POI poi : poiList){
+					File home = new File(Constants.DATAPATH+File.separator+city+File.separator+poi.getPoivalue());//例如C:\Users\andieguo\poi-data
+					putHBaseUtil.listFile(home,type,table);
+					break;
+				}
+				long endtime = System.currentTimeMillis();
+				long fileNumber = putHBaseUtil.getFileNumber();
+				long poiNumber = putHBaseUtil.getPoiNumber();
+				Record record = new Record(endtime-starttime,poiNumber,fileNumber);
+				records.add(record);
+				break;
+			}
+			if(table != null) table.close();
+			HSSFWorkbook workbook = new HSSFWorkbook();
+			ExcelWrite<Record> userSheet = new ExcelWrite<Record>();
+			userSheet.creatAuditSheet(workbook, "串行导入记录", records, RECORES_COLUMNS, RECORES_FIELDS);
+
+			FileOutputStream fileOut = new FileOutputStream(new File(Constants.MKDIRPATH + File.separator + "loadrecord.xls"));
+			workbook.write(fileOut);
+			fileOut.close();
+		}else{
+			System.out.println("main [wtable|htable] [tableName]");
+		}
+		
+	}
+	
+	/**
+	 * @return the poiNumber
+	 */
+	public long getPoiNumber() {
+		return poiNumber;
+	}
+
+	/**
+	 * @return the fileNumber
+	 */
+	public long getFileNumber() {
+		return fileNumber;
 	}
 }
