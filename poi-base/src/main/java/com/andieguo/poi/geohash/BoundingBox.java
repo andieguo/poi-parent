@@ -99,6 +99,10 @@ public class BoundingBox implements Serializable {
 		return new WGS84Point(centerLatitude, centerLongitude);
 	}
 
+	/**
+	 * 扩展矩形框去包含other矩形框
+	 * @param other
+	 */
 	public void expandToInclude(BoundingBox other) {
 		if (other.minLon < minLon) {
 			minLon = other.minLon;

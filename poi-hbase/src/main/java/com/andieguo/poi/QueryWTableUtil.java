@@ -54,6 +54,7 @@ public class QueryWTableUtil {
 				byte[] endkey = BytesUtil.endkeyGen(typeA);
 				Filter geohashfilter = new RowFilter(CompareOp.EQUAL, new SubstringComparator(adjacent[i].toBase32()));
 				Scan scan = new Scan(startkey, endkey);
+				scan.setCaching(100);
 				scan.setFilter(geohashfilter);
 				rs = table.getScanner(scan);
 				putRow(poiBeans, rs);
@@ -93,6 +94,7 @@ public class QueryWTableUtil {
 				filterList.addFilter(geohashfilter);
 				filterList.addFilter(distancefilter);
 				Scan scan = new Scan(startkey, endkey);
+				scan.setCaching(100);
 				scan.setFilter(filterList);
 				rs = table.getScanner(scan);
 				putRow(poiBeans, rs);
@@ -342,6 +344,7 @@ public class QueryWTableUtil {
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		HTableInterface table = connection.getTable(tableName);
 		Scan scan = new Scan(startkey, endkey);
+		scan.setCaching(100);
 		scan.setFilter(filter);
 		ResultScanner rs = table.getScanner(scan);
 		putRow(poiBeans, rs);

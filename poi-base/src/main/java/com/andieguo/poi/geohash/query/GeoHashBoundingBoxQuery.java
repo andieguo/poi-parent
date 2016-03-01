@@ -18,6 +18,7 @@ import com.andieguo.poi.geohash.WGS84Point;
 import com.andieguo.poi.geohash.util.GeoHashSizeTable;
 
 /**
+ * 该类返回一系列geohash集合，覆盖一个特定的矩形框。
  * This class returns the hashes covering a certain bounding box. There are
  * either 1,2 or 4 susch hashes, depending on the position of the bounding box
  * on the geohash grid.
@@ -30,38 +31,48 @@ public class GeoHashBoundingBoxQuery implements GeoHashQuery, Serializable {
 	private BoundingBox boundingBox;
 
 	public GeoHashBoundingBoxQuery(BoundingBox bbox) {
+		//根据矩形框获取适合的geohash精度
 		int fittingBits = GeoHashSizeTable.numberOfBitsForOverlappingGeoHash(bbox);
-		WGS84Point center = bbox.getCenterPoint();
+		WGS84Point center = bbox.getCenterPoint();//获取矩形的中心点
+		//根据经纬度+geohash精度获取geohash
 		GeoHash centerHash = GeoHash.withBitPrecision(center.getLatitude(), center.getLongitude(), fittingBits);
-
-		if (hashFits(centerHash, bbox)) {
+		//geohash所在区域是否包含矩形框bbox
+		if (hashFits(centerHash, bbox)) {//包含
 			addSearchHash(centerHash);
-		} else {
+		} else {//不包含
 			expandSearch(centerHash, bbox);
 		}
 	}
 
 	private void addSearchHash(GeoHash hash) {
 		if (boundingBox == null) {
-			boundingBox = new BoundingBox(hash.getBoundingBox());
+			boundingBox = new BoundingBox(hash.getBoundingBox());//创建一个矩形框
 		} else {
+			//合并矩形框
 			boundingBox.expandToInclude(hash.getBoundingBox());
 		}
-		searchHashes.add(hash);
+		searchHashes.add(hash);//将hash添加到集合
 	}
 
 	private void expandSearch(GeoHash centerHash, BoundingBox bbox) {
 		addSearchHash(centerHash);
 
-		for (GeoHash adjacent : centerHash.getAdjacent()) {
+		for (GeoHash adjacent : centerHash.getAdjacent()) {//获取到geohash的8个矩形框，执行遍历
 			BoundingBox adjacentBox = adjacent.getBoundingBox();
+			//adjacent所在区域与bbox相交，且目标集合中所在的geohash区域不存在，则添加
 			if (adjacentBox.intersects(bbox) && !searchHashes.contains(adjacent)) {
 				addSearchHash(adjacent);
 			}
 		}
 	}
-
+	/**
+	 * geohash所在区域是否包含矩形框bbox
+	 * @param hash
+	 * @param bbox
+	 * @return
+	 */
 	private boolean hashFits(GeoHash hash, BoundingBox bbox) {
+		//geohash所在区域包含矩形框的右上点和左下点，即geohash所在区域包含矩形框bbox
 		return hash.contains(bbox.getUpperLeft()) && hash.contains(bbox.getLowerRight());
 	}
 

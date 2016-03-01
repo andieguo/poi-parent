@@ -8,12 +8,15 @@ public class QueryWTableUtilTest extends TestCase {
 
 	public void testQueryByCircleAndtypeA(){
 		try {
+			long starttime = System.currentTimeMillis();
 			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
-			List<PoiBean> poiBeans = queryHBaseUtil.findByCircleAndtypeA("poi_wtable", "餐饮服务", 39.983168, 116.376796,100);
+			List<PoiBean> poiBeans = queryHBaseUtil.findByCircleAndtypeA("poi_wtable", "住宿服务", 39.983168, 116.376796,300000);
 			for(PoiBean poiBean : poiBeans){
 				System.out.println(poiBean);
 			}
 			System.out.println("size------------->"+poiBeans.size());
+			long endtime = System.currentTimeMillis();
+			System.out.println("time:"+(endtime-starttime));
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -22,12 +25,15 @@ public class QueryWTableUtilTest extends TestCase {
 	
 	public void testQueryByCircleAndtypeALocal(){
 		try {
+			long starttime = System.currentTimeMillis();
 			QueryWTableUtil queryHBaseUtil  = new QueryWTableUtil();
-			List<PoiBean> poiBeans = queryHBaseUtil.findByCircleAndtypeALocal("poi_wtable", "餐饮服务", 39.983168, 116.376796,3000);
+			List<PoiBean> poiBeans = queryHBaseUtil.findByCircleAndtypeALocal("poi_wtable", "住宿服务", 39.983168, 116.376796,300000);
 			for(PoiBean poiBean : poiBeans){
 				System.out.println(poiBean);
 			}
 			System.out.println("size------------->"+poiBeans.size());
+			long endtime = System.currentTimeMillis();
+			System.out.println("time:"+(endtime-starttime));
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
