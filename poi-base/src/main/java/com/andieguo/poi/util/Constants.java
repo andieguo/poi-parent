@@ -11,5 +11,6 @@ public class Constants {
 	public static final String MKDIRPATH = HOMEPATH+File.separator+PROJECTPARENT;
 	public static final String LOCAL_PATH = MKDIRPATH+File.separator+LOCAL_FILE;//类路径配置文件：记录下载最后更新的时间点
 	public static final String HDFS_PATH =  MKDIRPATH+File.separator+HDFS_FILE;//类路径配置文件：记录下载最后更新的时间点
-	
+	public static final String WTABLE = "WTable";
+	public static final String HTABLE = "HTable";
 }

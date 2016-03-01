@@ -51,9 +51,9 @@ public class PutHBaseUtil {
 			List<PoiBean> poiBeans = parseFile(file);
 			poiNumber = poiNumber + poiBeans.size();
 			fileNumber++;
-			if(type.equals("wtable")){
+			if(type.equals(Constants.WTABLE)){
 				putWRow(table,poiBeans);
-			}else if(type.equals("htable")){
+			}else if(type.equals(Constants.HTABLE)){
 				putHRow(table, poiBeans);
 			}
 		}else if(file.exists() && file.isDirectory()){//目录
@@ -185,7 +185,7 @@ public class PutHBaseUtil {
 			workbook.write(fileOut);
 			fileOut.close();
 		}else{
-			System.out.println("main [wtable|htable] [tableName]");
+			System.out.println("main [WTable|HTable] [tableName]");
 		}
 		
 	}

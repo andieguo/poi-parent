@@ -19,6 +19,7 @@ import org.json.JSONObject;
 import com.andieguo.poi.BytesUtil;
 import com.andieguo.poi.PoiBean;
 import com.andieguo.poi.geohash.GeoHash;
+import com.andieguo.poi.util.Constants;
 
 public class PoiMapper extends
 		Mapper<LongWritable, Text, ImmutableBytesWritable, Put> {
@@ -61,9 +62,9 @@ public class PoiMapper extends
 					PoiBean poiBean = new PoiBean(uid, address, name, telephone, lng, lat,city,type,geohash);
 					poiBeans.add(poiBean);
 				}
-				if(indextype.equals("WTable")){
+				if(indextype.equals(Constants.WTABLE)){
 					putWRow(tablename, poiBeans, context, counterout);
-				}else if(indextype.equals("HTable")){
+				}else if(indextype.equals(Constants.HTABLE)){
 					putHRow(tablename, poiBeans, context, counterout);
 				}
 			}
