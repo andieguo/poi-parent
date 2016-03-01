@@ -19,8 +19,10 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.andieguo.poi.dao.CityDao;
 import com.andieguo.poi.dao.POIDao;
+import com.andieguo.poi.dao.POIDataDao;
 import com.andieguo.poi.geohash.GeoHash;
 import com.andieguo.poi.pojo.POI;
+import com.andieguo.poi.pojo.POIData;
 import com.andieguo.poi.util.Constants;
 import com.andieguo.poi.util.ExcelWrite;
 import com.andieguo.poi.util.FileUtil;
@@ -32,6 +34,9 @@ public class PutHBaseUtil {
 	private Logger logger;
 	private long poiNumber = 0;
 	private long fileNumber = 0;
+	private static POIDataDao poiDataDao;
+	private static CityDao cityDao ;
+	private static POIDao poiDao ;
 	/* excel column formate:column_#_width, excel中每一列的名称 */
 	public static final String[] RECORES_COLUMNS = new String[] { "timedifference_#_5000", "poiNumber_#_5000","fileNumber_#_5000" };
 	/* the column will display on xls files. must the same as the entity fields.对应上面的字段. */
@@ -39,6 +44,10 @@ public class PutHBaseUtil {
 	
 	public PutHBaseUtil() throws Exception{
 		logger = Logger.getLogger(PutHBaseUtil.class);
+		ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
+		cityDao = (CityDao) context.getBean("cityDao");
+		poiDao = (POIDao) context.getBean("poiDao");
+		poiDataDao = (POIDataDao) context.getBean("poiDataDao");
 	}
 	
 	/**
@@ -55,6 +64,8 @@ public class PutHBaseUtil {
 				putWRow(table,poiBeans);
 			}else if(type.equals(Constants.HTABLE)){
 				putHRow(table, poiBeans);
+			}else if(type.equals(Constants.MYSQLTABEL)){
+				putMySQL(poiDataDao, poiBeans);
 			}
 		}else if(file.exists() && file.isDirectory()){//目录
 			File[] files = file.listFiles();  
@@ -115,6 +126,16 @@ public class PutHBaseUtil {
 		
 	}
 	
+	public void putMySQL(POIDataDao dao,List<PoiBean> poiBeans) throws IOException{
+		for(int i=0;i<poiBeans.size();i++){
+			PoiBean poiBean = poiBeans.get(i);
+			String[] types = poiBean.getType().split(";");
+			POIData poiData = new POIData(types[0],types[1],types[2],poiBean.getName(),poiBean.getAddress(),poiBean.getTelephone(),
+					poiBean.getLng(),poiBean.getLat(),poiBean.getCity());
+			dao.save(poiData);
+		}
+	}
+	
 	/**
 	 * 解析JSON文件，并装载PoiBean到集合
 	 * @param input
@@ -148,16 +169,15 @@ public class PutHBaseUtil {
 	
 	public static void main(String[] args) throws Exception {
 		if(args.length == 2){
+			HTableInterface table = null;
 			String type = args[0];
 			String tableName = args[1];
 			PutHBaseUtil putHBaseUtil = new PutHBaseUtil();
-			HTableInterface table = HConnectionSingle.getHConnection().getTable(tableName);
+			if(type.equals(Constants.WTABLE) || type.equals(Constants.HTABLE)){
+				table = HConnectionSingle.getHConnection().getTable(tableName);
+			}
 			HBaseUtil hbaseUtil = new HBaseUtil();
 			hbaseUtil.create(tableName,"info");
-			@SuppressWarnings("resource")
-			ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
-			CityDao cityDao = (CityDao) context.getBean("cityDao");
-			POIDao poiDao = (POIDao) context.getBean("poiDao");
 			List<String> cityList = cityDao.findAll();
 			List<POI> poiList = poiDao.findByType(0);
 			List<Record> records = new ArrayList<Record>();

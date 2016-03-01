@@ -19,6 +19,9 @@
 	<bean id="poiDao" class="com.andieguo.poi.dao.POIDaoImpl" >  
         <property name="jdbcTemplate"><ref bean="jdbcTemplate" /></property>  
     </bean>
+    <bean id="poiDataDao" class="com.andieguo.poi.dao.POIDataDaoImpl" >  
+        <property name="jdbcTemplate"><ref bean="jdbcTemplate" /></property>  
+    </bean>
     <bean id="cityDao" class="com.andieguo.poi.dao.CityDaoImpl"></bean>
 	<bean id="dataSource"
 		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
