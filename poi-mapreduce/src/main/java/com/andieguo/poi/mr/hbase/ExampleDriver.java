@@ -8,6 +8,7 @@ public class ExampleDriver {
 		ProgramDriver pgd = new ProgramDriver();
 		try {
 		      pgd.addClass("main", Main.class, "A map/reduce program that insert poi data to hbase.");
+		      pgd.addClass("hfile", MainHFile.class, "A map/reduce program that insert poi data to hfile.");
 		      pgd.driver(args);
 		    }
 		    catch(Throwable e){

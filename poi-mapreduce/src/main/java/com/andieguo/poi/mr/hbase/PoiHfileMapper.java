@@ -21,7 +21,7 @@ import com.andieguo.poi.PoiBean;
 import com.andieguo.poi.geohash.GeoHash;
 import com.andieguo.poi.util.Constants;
 
-public class PoiMapper extends
+public class PoiHfileMapper extends
 		Mapper<LongWritable, Text, ImmutableBytesWritable, Put> {
 
 	@Override
@@ -47,11 +47,7 @@ public class PoiMapper extends
             	if(info.length == 3){
             		city = info[0];
                 	type = info[1];
-            	}else{
-            		return;
             	}
-            }else{
-            	return;
             }
 			JSONObject jsonResult = new JSONObject(source);
 			JSONArray array = jsonResult.getJSONArray("results");
@@ -90,7 +86,7 @@ public class PoiMapper extends
 	 * @param poiBeans
 	 * @throws IOException
 	 */
-//	@SuppressWarnings("deprecation")
+	@SuppressWarnings("deprecation")
 	public void putWRow(String tableName,List<PoiBean> poiBeans,Context context,Counter counterout) throws Exception {
 		for(int j=0;j<poiBeans.size();j++){
 			counterout.increment(1);
@@ -99,7 +95,7 @@ public class PoiMapper extends
 			if(types.length == 3){
 				byte[] rowkey = BytesUtil.startkeyGen(3,types[0],types[1],types[2],poiBean.getGeohash(),poiBean.getUid());
 				Put putRow = new Put(rowkey);//一条记录就生成一条rowkey
-//				putRow.setWriteToWAL(false);
+				putRow.setWriteToWAL(false);
 				if(!poiBean.getName().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("name"),Bytes.toBytes(poiBean.getName()));
 				if(!poiBean.getAddress().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("address"), Bytes.toBytes(poiBean.getAddress()));
 				if(!poiBean.getTelephone().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("telephone"), Bytes.toBytes(poiBean.getTelephone()));
@@ -119,7 +115,7 @@ public class PoiMapper extends
 	 * @param poiBeans
 	 * @throws IOException
 	 */
-//	@SuppressWarnings("deprecation")
+	@SuppressWarnings("deprecation")
 	public void putHRow(String tableName,List<PoiBean> poiBeans,Context context,Counter counterout) throws Exception{
 		for(int i=0;i<poiBeans.size();i++){
 			PoiBean poiBean = poiBeans.get(i);
@@ -130,7 +126,7 @@ public class PoiMapper extends
 					if(j == 1 && types[1] == types[2]) continue;
 					byte[] rowkey = BytesUtil.startkeyGen(1,types[j],poiBean.getGeohash(),poiBean.getUid());
 					Put putRow = new Put(rowkey);//一条记录就生成一条rowkey
-//					putRow.setWriteToWAL(false);
+					putRow.setWriteToWAL(false);
 					if(!poiBean.getName().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("name"),Bytes.toBytes(poiBean.getName()));
 					if(!poiBean.getAddress().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("address"), Bytes.toBytes(poiBean.getAddress()));
 					if(!poiBean.getTelephone().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("telephone"), Bytes.toBytes(poiBean.getTelephone()));

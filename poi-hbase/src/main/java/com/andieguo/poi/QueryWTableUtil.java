@@ -219,13 +219,13 @@ public class QueryWTableUtil {
 	 * @param city
 	 * @return
 	 */
-	public List<PoiBean> findByCityAndtypeA(String tableName,String typeA,String city){
+	public List<PoiBean> findByCityAndtypeA(Integer cache,String tableName,String typeA,String city){
 		Filter filter = new SingleColumnValueFilter(Bytes.toBytes("info"),Bytes.toBytes("city"),CompareOp.EQUAL, Bytes.toBytes(city));
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		try {
 			byte[] startkey = BytesUtil.startkeyGen(typeA);
 			byte[] endkey = BytesUtil.endkeyGen(typeA);
-			poiBeans = putPoiBean(tableName,filter,startkey, endkey);
+			poiBeans = putPoiBean(cache,tableName,filter,startkey, endkey);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -239,13 +239,13 @@ public class QueryWTableUtil {
 	 * @param city
 	 * @return
 	 */
-	public List<PoiBean> findByCityAndtypeB(String tableName,String typeA,String typeB,String city){
+	public List<PoiBean> findByCityAndtypeB(Integer cache,String tableName,String typeA,String typeB,String city){
 		Filter filter = new SingleColumnValueFilter(Bytes.toBytes("info"),Bytes.toBytes("city"),CompareOp.EQUAL, Bytes.toBytes(city));
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		try {
 			byte[] startkey = BytesUtil.startkeyGen(typeA,typeB);
 			byte[] endkey = BytesUtil.endkeyGen(typeA,typeB);
-			poiBeans = putPoiBean(tableName,filter,startkey, endkey);
+			poiBeans = putPoiBean(cache,tableName,filter,startkey, endkey);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -261,13 +261,13 @@ public class QueryWTableUtil {
 	 * @param city
 	 * @return
 	 */
-	public List<PoiBean> findByCityAndtypeC(String tableName,String typeA,String typeB,String typeC,String city){
+	public List<PoiBean> findByCityAndtypeC(Integer cache,String tableName,String typeA,String typeB,String typeC,String city){
 		Filter filter = new SingleColumnValueFilter(Bytes.toBytes("info"),Bytes.toBytes("city"),CompareOp.EQUAL, Bytes.toBytes(city));
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		try {
 			byte[] startkey = BytesUtil.startkeyGen(typeA,typeB,typeC);
 			byte[] endkey = BytesUtil.endkeyGen(typeA,typeB,typeC);
-			poiBeans = putPoiBean(tableName,filter,startkey, endkey);
+			poiBeans = putPoiBean(cache,tableName,filter,startkey, endkey);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -344,11 +344,11 @@ public class QueryWTableUtil {
 		return poiBeans;
 	}
 	
-	public List<PoiBean> putPoiBean(String tableName, Filter filter,byte[] startkey, byte[] endkey) throws IOException {
+	public List<PoiBean> putPoiBean(Integer cache,String tableName, Filter filter,byte[] startkey, byte[] endkey) throws IOException {
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		HTableInterface table = connection.getTable(tableName);
 		Scan scan = new Scan(startkey, endkey);
-		scan.setCaching(100);
+		scan.setCaching(cache);
 		scan.setFilter(filter);
 		ResultScanner rs = table.getScanner(scan);
 		putRow(poiBeans, rs);

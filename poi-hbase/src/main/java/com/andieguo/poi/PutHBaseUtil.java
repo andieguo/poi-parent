@@ -84,17 +84,20 @@ public class PutHBaseUtil {
 		for(int j=0;j<poiBeans.size();j++){
 			PoiBean poiBean = poiBeans.get(j);
 			String[] types = poiBean.getType().split(";");
-			byte[] rowkey = BytesUtil.startkeyGen(3,types[0],types[1],types[2],poiBean.getGeohash(),poiBean.getUid());
-			Put putRow = new Put(rowkey);//一条记录就生成一条rowkey
-			if(!poiBean.getName().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("name"),Bytes.toBytes(poiBean.getName()));
-			if(!poiBean.getAddress().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("address"), Bytes.toBytes(poiBean.getAddress()));
-			if(!poiBean.getTelephone().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("telephone"), Bytes.toBytes(poiBean.getTelephone()));
-			putRow.add(Bytes.toBytes("info"), Bytes.toBytes("lng"), Bytes.toBytes(poiBean.getLng()));
-			putRow.add(Bytes.toBytes("info"), Bytes.toBytes("lat"), Bytes.toBytes(poiBean.getLat()));
-			putRow.add(Bytes.toBytes("info"), Bytes.toBytes("city"), Bytes.toBytes(poiBean.getCity()));
-			putRow.add(Bytes.toBytes("info"), Bytes.toBytes("type"), Bytes.toBytes(poiBean.getType()));
-			putRow.add(Bytes.toBytes("info"), Bytes.toBytes("geohash"), Bytes.toBytes(poiBean.getGeohash()));
-			table.put(putRow);
+			if(types.length == 3){
+				byte[] rowkey = BytesUtil.startkeyGen(3,types[0],types[1],types[2],poiBean.getGeohash(),poiBean.getUid());
+				Put putRow = new Put(rowkey);//一条记录就生成一条rowkey
+				if(!poiBean.getName().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("name"),Bytes.toBytes(poiBean.getName()));
+				if(!poiBean.getAddress().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("address"), Bytes.toBytes(poiBean.getAddress()));
+				if(!poiBean.getTelephone().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("telephone"), Bytes.toBytes(poiBean.getTelephone()));
+				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("lng"), Bytes.toBytes(poiBean.getLng()));
+				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("lat"), Bytes.toBytes(poiBean.getLat()));
+				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("city"), Bytes.toBytes(poiBean.getCity()));
+				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("type"), Bytes.toBytes(poiBean.getType()));
+				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("geohash"), Bytes.toBytes(poiBean.getGeohash()));
+				//table.setAutoFlush(false);
+				table.put(putRow);
+			}
 		}
 	}
 	/**
@@ -108,19 +111,21 @@ public class PutHBaseUtil {
 		for(int i=0;i<poiBeans.size();i++){
 			PoiBean poiBean = poiBeans.get(i);
 			String[] types = poiBean.getType().split(";");
-			for(int j=0;j<types.length;j++){
-				if(j == 1 && types[1] == types[2]) continue;
-				byte[] rowkey = BytesUtil.startkeyGen(1,types[j],poiBean.getGeohash(),poiBean.getUid());
-				Put putRow = new Put(rowkey);//一条记录就生成一条rowkey
-				if(!poiBean.getName().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("name"),Bytes.toBytes(poiBean.getName()));
-				if(!poiBean.getAddress().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("address"), Bytes.toBytes(poiBean.getAddress()));
-				if(!poiBean.getTelephone().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("telephone"), Bytes.toBytes(poiBean.getTelephone()));
-				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("lng"), Bytes.toBytes(poiBean.getLng()));
-				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("lat"), Bytes.toBytes(poiBean.getLat()));
-				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("city"), Bytes.toBytes(poiBean.getCity()));
-				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("type"), Bytes.toBytes(poiBean.getType()));
-				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("geohash"), Bytes.toBytes(poiBean.getGeohash()));
-				table.put(putRow);
+			if(types.length == 3){
+				for(int j=0;j<types.length;j++){
+					if(j == 1 && types[1] == types[2]) continue;
+					byte[] rowkey = BytesUtil.startkeyGen(1,types[j],poiBean.getGeohash(),poiBean.getUid());
+					Put putRow = new Put(rowkey);//一条记录就生成一条rowkey
+					if(!poiBean.getName().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("name"),Bytes.toBytes(poiBean.getName()));
+					if(!poiBean.getAddress().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("address"), Bytes.toBytes(poiBean.getAddress()));
+					if(!poiBean.getTelephone().equals("")) putRow.add(Bytes.toBytes("info"), Bytes.toBytes("telephone"), Bytes.toBytes(poiBean.getTelephone()));
+					putRow.add(Bytes.toBytes("info"), Bytes.toBytes("lng"), Bytes.toBytes(poiBean.getLng()));
+					putRow.add(Bytes.toBytes("info"), Bytes.toBytes("lat"), Bytes.toBytes(poiBean.getLat()));
+					putRow.add(Bytes.toBytes("info"), Bytes.toBytes("city"), Bytes.toBytes(poiBean.getCity()));
+					putRow.add(Bytes.toBytes("info"), Bytes.toBytes("type"), Bytes.toBytes(poiBean.getType()));
+					putRow.add(Bytes.toBytes("info"), Bytes.toBytes("geohash"), Bytes.toBytes(poiBean.getGeohash()));
+					table.put(putRow);
+				}
 			}
 		}
 		
@@ -152,16 +157,18 @@ public class PutHBaseUtil {
 			for(int i=0;i<array.length();i++){
 				String telephone="",name="",address="",uid="";
 				JSONObject obj = array.getJSONObject(i);
-				if(!obj.isNull("uid")) uid = obj.getString("uid");
-				if(!obj.isNull("address")) address = obj.getString("address");
-				JSONObject location = obj.getJSONObject("location");
-				double lng = location.getDouble("lng");
-				double lat = location.getDouble("lat");
-				String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat,lng,12);
-				if(!obj.isNull("name")) name = obj.getString("name");
-				if(!obj.isNull("telephone")) telephone = obj.getString("telephone");
-				PoiBean poiBean = new PoiBean(uid, address, name, telephone, lng, lat,names[0],names[1],geohash);
-				poiBeans.add(poiBean);
+				if(!obj.isNull("location")){
+					if(!obj.isNull("uid")) uid = obj.getString("uid");
+					if(!obj.isNull("address")) address = obj.getString("address");
+					JSONObject location = obj.getJSONObject("location");
+					double lng = location.getDouble("lng");
+					double lat = location.getDouble("lat");
+					String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat,lng,12);
+					if(!obj.isNull("name")) name = obj.getString("name");
+					if(!obj.isNull("telephone")) telephone = obj.getString("telephone");
+					PoiBean poiBean = new PoiBean(uid, address, name, telephone, lng, lat,names[0],names[1],geohash);
+					poiBeans.add(poiBean);
+				}
 			}
 		}
 		return poiBeans;
@@ -176,8 +183,8 @@ public class PutHBaseUtil {
 			if(type.equals(Constants.WTABLE) || type.equals(Constants.HTABLE)){
 				table = HConnectionSingle.getHConnection().getTable(tableName);
 			}
-			HBaseUtil hbaseUtil = new HBaseUtil();
-			hbaseUtil.create(tableName,"info");
+//			HBaseUtil hbaseUtil = new HBaseUtil();
+//			hbaseUtil.create(tableName,"info");
 			List<String> cityList = cityDao.findAll();
 			List<POI> poiList = poiDao.findByType(0);
 			List<Record> records = new ArrayList<Record>();
@@ -187,14 +194,12 @@ public class PutHBaseUtil {
 				for(POI poi : poiList){
 					File home = new File(Constants.DATAPATH+File.separator+city+File.separator+poi.getPoivalue());//例如C:\Users\andieguo\poi-data
 					putHBaseUtil.listFile(home,type,table);
-					break;
 				}
 				long endtime = System.currentTimeMillis();
 				long fileNumber = putHBaseUtil.getFileNumber();
 				long poiNumber = putHBaseUtil.getPoiNumber();
 				Record record = new Record(endtime-starttime,poiNumber,fileNumber);
 				records.add(record);
-				break;
 			}
 			if(table != null) table.close();
 			HSSFWorkbook workbook = new HSSFWorkbook();

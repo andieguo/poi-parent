@@ -89,15 +89,20 @@ public class UploadTool {
 	 */
 	public  boolean copyFile(String src, String dst, FileSystem fs)
 			throws Exception {
-		File file = new File(src);
-		InputStream in = new BufferedInputStream(new FileInputStream(file));
-		//FieSystem的create方法可以为文件不存在的父目录进行创建，
-		OutputStream out = fs.create(new Path(dst), new Progressable() {
-			public void progress() {
-			}
-		});
-		IOUtils.copyBytes(in, out, 4096, true);
-		return true;
+		Path dstPath = new Path(dst);
+		if(!fs.exists(dstPath)){
+			File file = new File(src);
+			InputStream in = new BufferedInputStream(new FileInputStream(file));
+			//FieSystem的create方法可以为文件不存在的父目录进行创建，
+			OutputStream out = fs.create(dstPath, new Progressable() {
+				public void progress() {
+				}
+			});
+			IOUtils.copyBytes(in, out, 4096, true);
+			return true;
+		}else{
+			return false;
+		}
 	}
 	
 	/* excel column formate:column_#_width, excel中每一列的名称 */
@@ -112,12 +117,60 @@ public class UploadTool {
 		CityDao cityDao = (CityDao) context.getBean("cityDao");
 		POIDao poiDao = (POIDao) context.getBean("poiDao");
 		List<String> cityList = cityDao.findAll();
+		cityList.remove(0);
 		List<POI> poiList = poiDao.findByType(0);
 		List<Record> records = new ArrayList<Record>();
 		Configuration conf = new Configuration();
 		conf.set("fs.default.name", "hdfs://master:9000");//很关键
 		FileSystem fs = FileSystem.get(conf);
 		long starttime = System.currentTimeMillis();
+		int count = 0;
+		//遍历本地的文件，同一将本地的文件拷贝到poi-data目录中
+		String dst = "/user/hadoop/poi-data-2/";
+		for(String city : cityList){
+			for(POI poi : poiList){
+				//E://poi-data//北京//餐饮服务;中餐厅;上海菜
+				String localSrc = Constants.DATAPATH+File.separator+city+File.separator+poi.getPoivalue();
+				File srcFile = new File(localSrc);
+				if (srcFile.exists() && srcFile.isDirectory()) {
+					File[] files = srcFile.listFiles();
+					for(File file : files){
+						String dstfile = dst +"/"+file.getName();
+						uploadTool.copyFile(file.getPath(), dstfile, fs);
+					}
+				}
+				break;
+			}
+			long endtime = System.currentTimeMillis();
+			Record record = new Record(endtime-starttime,0,0);
+			records.add(record);
+			count ++;
+			if(count==1)break;
+		}
+		if(fs != null) fs.close();
+		HSSFWorkbook workbook = new HSSFWorkbook();
+		ExcelWrite<Record> userSheet = new ExcelWrite<Record>();
+		userSheet.creatAuditSheet(workbook, "上传数据记录", records, RECORES_COLUMNS, RECORES_FIELDS);
+		FileOutputStream fileOut = new FileOutputStream(new File(Constants.MKDIRPATH + File.separator + "loadrecord-hdfs.xls"));
+		workbook.write(fileOut);
+		fileOut.close();
+	}
+	
+	public static void uploadAll() throws Exception {
+		UploadTool uploadTool = new UploadTool();
+		@SuppressWarnings("resource")
+		ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
+		CityDao cityDao = (CityDao) context.getBean("cityDao");
+		POIDao poiDao = (POIDao) context.getBean("poiDao");
+		List<String> cityList = cityDao.findAll();
+		cityList.remove(0);
+		List<POI> poiList = poiDao.findByType(0);
+		List<Record> records = new ArrayList<Record>();
+		Configuration conf = new Configuration();
+		conf.set("fs.default.name", "hdfs://master:9000");//很关键
+		FileSystem fs = FileSystem.get(conf);
+		long starttime = System.currentTimeMillis();
+		int count = 0;
 		for(String city : cityList){
 			for(POI poi : poiList){
 				String localSrc = Constants.DATAPATH+File.separator+city+File.separator+poi.getPoivalue();
@@ -130,19 +183,19 @@ public class UploadTool {
 						uploadTool.copyFile(localSrc, dst, fs);
 					}
 				}
-				break;
 			}
 			long endtime = System.currentTimeMillis();
 			Record record = new Record(endtime-starttime,0,0);
 			records.add(record);
-			break;
+			count ++;
+			if(count==63)break;
 		}
 		if(fs != null) fs.close();
 		HSSFWorkbook workbook = new HSSFWorkbook();
 		ExcelWrite<Record> userSheet = new ExcelWrite<Record>();
 		userSheet.creatAuditSheet(workbook, "上传数据记录", records, RECORES_COLUMNS, RECORES_FIELDS);
 
-		FileOutputStream fileOut = new FileOutputStream(new File(Constants.MKDIRPATH + File.separator + "loadrecord.xls"));
+		FileOutputStream fileOut = new FileOutputStream(new File(Constants.MKDIRPATH + File.separator + "loadrecord-hdfs.xls"));
 		workbook.write(fileOut);
 		fileOut.close();
 	}

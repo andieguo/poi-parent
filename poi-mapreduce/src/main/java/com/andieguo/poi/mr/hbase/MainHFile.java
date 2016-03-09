@@ -13,47 +13,65 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.HFileOutputFormat;
+import org.apache.hadoop.hbase.mapreduce.PutSortReducer;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import com.andieguo.poi.util.FileUtil;
 import com.andieguo.poi.util.PropertiesUtil;
 
-public class Main {
+public class MainHFile {
 
 	// 在MapReduce中，由Job对象负责管理和运行一个计算任务，并通过Job的一些方法对任>务的参数进行相关的设置。
 	public static void main(String[] args) throws Exception {
 		Configuration conf = HBaseConfiguration.create();
 		String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-		if (otherArgs.length != 3) {
-			System.err.println("Usage: Main [tableName] [WTable|HTable] [input]");
+		if (otherArgs.length != 4) {
+			System.err.println("Usage: MainHFile [tableName] [WTable|HTable] [input] [output]");
 			System.exit(2);
 		}
-		Properties properties = PropertiesUtil.loadFromInputStream(Main.class.getResourceAsStream("/hbase-config.properties"));
+		Properties properties = PropertiesUtil.loadFromInputStream(MainHFile.class.getResourceAsStream("/hbase-config.properties"));
 		conf.set("hbase.zookeeper.quorum",properties.getProperty("hbase.zookeeper.quorum"));
 		String tablename = otherArgs[0];
 		conf.set("tablename", otherArgs[0]);
 		conf.set("indextype", otherArgs[1]);
 		conf.set("input", otherArgs[2]);
 		Job job = new Job(conf, "PoiHBaseMain");
-		job.setJarByClass(Main.class);
-		job.setMapperClass(PoiMapper.class);
-		TableMapReduceUtil.initTableReducerJob(tablename, null, job);
-		job.setNumReduceTasks(0);
-		/**** 准备输出 *****/
+		job.setJarByClass(MainHFile.class);
+		job.setMapperClass(PoiHfileMapper.class);
+		/**** Map输入输出格式化类**/
+		job.setMapOutputKeyClass(ImmutableBytesWritable.class);
+		job.setMapOutputValueClass(Put.class);
+		/**** 输入输出格式化类**/
+		job.setInputFormatClass(TextInputFormat.class);
+		job.setOutputFormatClass(HFileOutputFormat.class);
+		/**** 创建HBase表*****/
 		prepareOutput(conf, tablename);
-		/**** 准备输入 *****/
+		/**** 准备输入 数据源*****/
 		FileInputFormat.setInputPaths(job,new Path(otherArgs[2]));
+		/*******生成HFile**********/
+		HTable table = new HTable(conf, tablename);
+		job.setReducerClass(PutSortReducer.class);
+		Path outputDir = new Path(otherArgs[3]);
+		/**** 准备输出*****/
+		FileOutputFormat.setOutputPath(job, outputDir);
+		HFileOutputFormat.configureIncrementalLoad(job, table);
 		System.exit(job.waitForCompletion(true) ? 0 : 1);
 	}
 	
 	public static List<String> findAll() {
 		// TODO Auto-generated method stub
 		List<String> list = new ArrayList<String>();
-		String result = FileUtil.readFile(Main.class.getClassLoader().getResourceAsStream("city.json"));
+		String result = FileUtil.readFile(MainHFile.class.getClassLoader().getResourceAsStream("city.json"));
 		JSONObject jsonObj = new JSONObject(result);
 		JSONArray array = jsonObj.getJSONArray("城市代码");
 		for(int i=0;i<array.length();i++){
