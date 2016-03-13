@@ -17,6 +17,7 @@ import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.HFileOutputFormat;
+import org.apache.hadoop.hbase.mapreduce.LoadIncrementalHFiles;
 import org.apache.hadoop.hbase.mapreduce.PutSortReducer;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -30,7 +31,6 @@ import com.andieguo.poi.util.FileUtil;
 import com.andieguo.poi.util.PropertiesUtil;
 
 public class MainHFile {
-
 	// 在MapReduce中，由Job对象负责管理和运行一个计算任务，并通过Job的一些方法对任>务的参数进行相关的设置。
 	public static void main(String[] args) throws Exception {
 		Configuration conf = HBaseConfiguration.create();
@@ -48,24 +48,31 @@ public class MainHFile {
 		Job job = new Job(conf, "PoiHBaseMain");
 		job.setJarByClass(MainHFile.class);
 		job.setMapperClass(PoiHfileMapper.class);
-		/**** Map输入输出格式化类**/
+		/**** Map输入输出格式化类 **/
 		job.setMapOutputKeyClass(ImmutableBytesWritable.class);
 		job.setMapOutputValueClass(Put.class);
-		/**** 输入输出格式化类**/
+		/**** 输入输出格式化类 **/
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(HFileOutputFormat.class);
-		/**** 创建HBase表*****/
+		/**** 创建HBase表 *****/
 		prepareOutput(conf, tablename);
-		/**** 准备输入 数据源*****/
+		/**** 准备输入 数据源 *****/
 		FileInputFormat.setInputPaths(job,new Path(otherArgs[2]));
-		/*******生成HFile**********/
+		/*******生成HFile **********/
 		HTable table = new HTable(conf, tablename);
+		table.setWriteBufferSize(6 * 1024 * 1024);  
+		table.setAutoFlush(false); 
 		job.setReducerClass(PutSortReducer.class);
 		Path outputDir = new Path(otherArgs[3]);
-		/**** 准备输出*****/
+		/**** 准备输出 *****/
 		FileOutputFormat.setOutputPath(job, outputDir);
 		HFileOutputFormat.configureIncrementalLoad(job, table);
-		System.exit(job.waitForCompletion(true) ? 0 : 1);
+		if(job.waitForCompletion(true)){
+			LoadIncrementalHFiles loader = new LoadIncrementalHFiles(conf);
+			loader.doBulkLoad(new Path(otherArgs[3]), table);
+		}else{
+			System.exit(1);
+		}
 	}
 	
 	public static List<String> findAll() {
