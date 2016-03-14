@@ -95,7 +95,8 @@ public class PutHBaseUtil {
 				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("city"), Bytes.toBytes(poiBean.getCity()));
 				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("type"), Bytes.toBytes(poiBean.getType()));
 				putRow.add(Bytes.toBytes("info"), Bytes.toBytes("geohash"), Bytes.toBytes(poiBean.getGeohash()));
-				//table.setAutoFlush(false);
+				table.setWriteBufferSize(6 * 1024 * 1024); //6MB
+				table.setAutoFlush(false);
 				table.put(putRow);
 			}
 		}
@@ -124,6 +125,8 @@ public class PutHBaseUtil {
 					putRow.add(Bytes.toBytes("info"), Bytes.toBytes("city"), Bytes.toBytes(poiBean.getCity()));
 					putRow.add(Bytes.toBytes("info"), Bytes.toBytes("type"), Bytes.toBytes(poiBean.getType()));
 					putRow.add(Bytes.toBytes("info"), Bytes.toBytes("geohash"), Bytes.toBytes(poiBean.getGeohash()));
+					table.setWriteBufferSize(6 * 1024 * 1024); //6MB
+					table.setAutoFlush(false);
 					table.put(putRow);
 				}
 			}
@@ -131,13 +134,19 @@ public class PutHBaseUtil {
 		
 	}
 	
-	public void putMySQL(POIDataDao dao,List<PoiBean> poiBeans) throws IOException{
+	public static Integer sum = 0;
+	public void putMySQL(POIDataDao dao,List<PoiBean> poiBeans){
 		for(int i=0;i<poiBeans.size();i++){
-			PoiBean poiBean = poiBeans.get(i);
-			String[] types = poiBean.getType().split(";");
-			POIData poiData = new POIData(types[0],types[1],types[2],poiBean.getName(),poiBean.getAddress(),poiBean.getTelephone(),
-					poiBean.getLng(),poiBean.getLat(),poiBean.getCity());
-			dao.save(poiData);
+			sum ++;
+			if(sum >= (3404634-1+1)){
+				PoiBean poiBean = poiBeans.get(i);
+				String[] types = poiBean.getType().split(";");
+				if(types.length == 3){
+					POIData poiData = new POIData(types[0],types[1],types[2],poiBean.getName(),poiBean.getAddress(),poiBean.getTelephone(),
+							poiBean.getLng(),poiBean.getLat(),poiBean.getCity());
+					dao.save(poiData);
+				}
+			}
 		}
 	}
 	
@@ -183,13 +192,12 @@ public class PutHBaseUtil {
 			if(type.equals(Constants.WTABLE) || type.equals(Constants.HTABLE)){
 				table = HConnectionSingle.getHConnection().getTable(tableName);
 			}
-//			HBaseUtil hbaseUtil = new HBaseUtil();
-//			hbaseUtil.create(tableName,"info");
 			List<String> cityList = cityDao.findAll();
 			List<POI> poiList = poiDao.findByType(0);
 			List<Record> records = new ArrayList<Record>();
 			//遍历家目录下的poi-data目录
 			long starttime = System.currentTimeMillis();
+			int count = 0;
 			for(String city : cityList){
 				for(POI poi : poiList){
 					File home = new File(Constants.DATAPATH+File.separator+city+File.separator+poi.getPoivalue());//例如C:\Users\andieguo\poi-data
@@ -200,13 +208,14 @@ public class PutHBaseUtil {
 				long poiNumber = putHBaseUtil.getPoiNumber();
 				Record record = new Record(endtime-starttime,poiNumber,fileNumber);
 				records.add(record);
+				count ++;
+				if(count == 184) break;
 			}
 			if(table != null) table.close();
 			HSSFWorkbook workbook = new HSSFWorkbook();
 			ExcelWrite<Record> userSheet = new ExcelWrite<Record>();
 			userSheet.creatAuditSheet(workbook, "串行导入记录", records, RECORES_COLUMNS, RECORES_FIELDS);
-
-			FileOutputStream fileOut = new FileOutputStream(new File(Constants.MKDIRPATH + File.separator + "loadrecord.xls"));
+			FileOutputStream fileOut = new FileOutputStream(new File(Constants.MKDIRPATH + File.separator + "loadrecord-20160312.xls"));
 			workbook.write(fileOut);
 			fileOut.close();
 		}else{

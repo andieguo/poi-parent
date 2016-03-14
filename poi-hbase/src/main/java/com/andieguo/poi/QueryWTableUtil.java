@@ -41,6 +41,33 @@ public class QueryWTableUtil {
 		logger = Logger.getLogger(QueryWTableUtil.class);
 	}
 	
+	public List<PoiBean> findByTypeAdjacent(String tableName,Integer cache,String typeA,double lat,double lng){
+		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
+		ResultScanner rs = null;
+		HTableInterface table = null;
+		try {
+			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
+			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
+			table = connection.getTable(tableName);
+			for(int i=0;i<adjacent.length;i++){
+				System.out.println(adjacent[i].toBase32());
+				byte[] startkey = BytesUtil.startkeyGen(typeA);
+				byte[] endkey = BytesUtil.endkeyGen(typeA);
+				Filter geohashfilter = new RowFilter(CompareOp.EQUAL, new SubstringComparator(adjacent[i].toBase32()));
+				Scan scan = new Scan(startkey, endkey);
+				scan.setCaching(cache);
+				scan.setFilter(geohashfilter);
+				rs = table.getScanner(scan);
+				putRow(poiBeans, rs);
+			}
+			if (rs != null) rs.close();
+			if (table != null) table.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return poiBeans;
+	}
+	
 	public List<PoiBean> findByCircleAndtypeALocal(String tableName,String typeA,double lat,double lng,double radius){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		List<PoiBean> poiBeanList = new ArrayList<PoiBean>();
@@ -119,12 +146,12 @@ public class QueryWTableUtil {
 	 * @param lng
 	 * @return
 	 */
-	public List<PoiBean> findByNearbyAndtypeA(String tableName,String typeA,double lat,double lng){
+	public List<PoiBean> findByNearbyAndtypeA(String tableName,Integer cache,String typeA,double lat,double lng){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
 		HTableInterface table = null;
 		try {
-			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
+			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 4);//根据经纬度生成geohash字符串
 			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
 			table = connection.getTable(tableName);
 			for(int i=0;i<adjacent.length;i++){
@@ -133,6 +160,7 @@ public class QueryWTableUtil {
 				byte[] endkey = BytesUtil.endkeyGen(typeA);
 				Filter filter = new RowFilter(CompareOp.EQUAL, new SubstringComparator(adjacent[i].toBase32()));
 				Scan scan = new Scan(startkey, endkey);
+				scan.setCaching(cache);
 				scan.setFilter(filter);
 				rs = table.getScanner(scan);
 				putRow(poiBeans, rs);
@@ -153,12 +181,12 @@ public class QueryWTableUtil {
 	 * @param lng
 	 * @return
 	 */
-	public List<PoiBean> findByNearbyAndtypeB(String tableName,String typeA,String typeB,double lat,double lng){
+	public List<PoiBean> findByNearbyAndtypeB(String tableName,Integer cache,String typeA,String typeB,double lat,double lng){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
 		HTableInterface table = null;
 		try {
-			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
+			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 4);//根据经纬度生成geohash字符串
 			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
 			table = connection.getTable(tableName);
 			for(int i=0;i<adjacent.length;i++){
@@ -167,6 +195,7 @@ public class QueryWTableUtil {
 				byte[] endkey = BytesUtil.endkeyGen(typeA,typeB);
 				Filter filter = new RowFilter(CompareOp.EQUAL, new SubstringComparator(adjacent[i].toBase32()));
 				Scan scan = new Scan(startkey, endkey);
+				scan.setCaching(cache);
 				scan.setFilter(filter);
 				rs = table.getScanner(scan);
 				putRow(poiBeans, rs);
@@ -188,12 +217,12 @@ public class QueryWTableUtil {
 	 * @param lng
 	 * @return
 	 */
-	public List<PoiBean> findByNearbyAndtypeC(String tableName,String typeA,String typeB,String typeC,double lat,double lng){
+	public List<PoiBean> findByNearbyAndtypeC(String tableName,Integer cache,String typeA,String typeB,String typeC,double lat,double lng){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		ResultScanner rs = null;
 		HTableInterface table = null;
 		try {
-			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 5);//根据经纬度生成geohash字符串
+			String geohash = GeoHash.geoHashStringWithCharacterPrecision(lat, lng, 4);//根据经纬度生成geohash字符串
 			GeoHash[] adjacent = GeoHash.fromGeohashString(geohash).getAdjacent();//根据geohash字符串找到附近的8个小方块
 			table = connection.getTable(tableName);
 			for(int i=0;i<adjacent.length;i++){
@@ -201,6 +230,7 @@ public class QueryWTableUtil {
 				byte[] startkey = BytesUtil.startkeyGen(3,typeA,typeB,typeC,adjacent[i].toBase32());
 				byte[] endkey = BytesUtil.endkeyGen(3,typeA,typeB,typeC,adjacent[i].toBase32());
 				Scan scan = new Scan(startkey, endkey);
+				scan.setCaching(cache);
 				rs = table.getScanner(scan);
 				putRow(poiBeans, rs);
 			}
@@ -226,6 +256,23 @@ public class QueryWTableUtil {
 			byte[] startkey = BytesUtil.startkeyGen(typeA);
 			byte[] endkey = BytesUtil.endkeyGen(typeA);
 			poiBeans = putPoiBean(cache,tableName,filter,startkey, endkey);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return poiBeans;
+	}
+	
+	public List<PoiBean> findByCityByNameAndtypeA(Integer cache,String tableName,String typeA,String city,String name){
+		FilterList filterList = new FilterList();
+		Filter cityFilter = new SingleColumnValueFilter(Bytes.toBytes("info"),Bytes.toBytes("city"),CompareOp.EQUAL,Bytes.toBytes(city));
+		Filter nameFilter = new SingleColumnValueFilter(Bytes.toBytes("info"),Bytes.toBytes("name"),CompareOp.EQUAL,new SubstringComparator(name));
+		filterList.addFilter(cityFilter);
+		filterList.addFilter(nameFilter);
+		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
+		try {
+			byte[] startkey = BytesUtil.startkeyGen(typeA);
+			byte[] endkey = BytesUtil.endkeyGen(typeA);
+			poiBeans = putPoiBean(cache,tableName,filterList,startkey, endkey);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -279,12 +326,12 @@ public class QueryWTableUtil {
 	 * @param typeA
 	 * @return
 	 */
-	public List<PoiBean> findBytypeA(String tableName,String typeA){
+	public List<PoiBean> findBytypeA(String tableName,Integer cache,String typeA){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		try {
 			byte[] startkey = BytesUtil.startkeyGen(typeA);
 			byte[] endkey = BytesUtil.endkeyGen(typeA);
-			poiBeans = putPoiBean(tableName, startkey, endkey);
+			poiBeans = putPoiBean(tableName,cache, startkey, endkey);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -296,12 +343,12 @@ public class QueryWTableUtil {
 	 * @param typeA
 	 * @return
 	 */
-	public List<PoiBean> findBytypeB(String tableName,String typeA,String typeB){
+	public List<PoiBean> findBytypeB(String tableName,Integer cache,String typeA,String typeB){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		try {
 			byte[] startkey = BytesUtil.startkeyGen(typeA,typeB);
 			byte[] endkey = BytesUtil.endkeyGen(typeA,typeB);
-			poiBeans = putPoiBean(tableName, startkey, endkey);
+			poiBeans = putPoiBean(tableName,cache, startkey, endkey);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -313,12 +360,12 @@ public class QueryWTableUtil {
 	 * @param typeA
 	 * @return
 	 */
-	public List<PoiBean> findBytypeC(String tableName,String typeA,String typeB,String typeC){
+	public List<PoiBean> findBytypeC(String tableName,Integer cache,String typeA,String typeB,String typeC){
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		try {
 			byte[] startkey = BytesUtil.startkeyGen(typeA,typeB,typeC);
 			byte[] endkey = BytesUtil.endkeyGen(typeA,typeB,typeC);
-			poiBeans = putPoiBean(tableName, startkey, endkey);
+			poiBeans = putPoiBean(tableName,cache, startkey, endkey);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -333,10 +380,11 @@ public class QueryWTableUtil {
 	 * @return
 	 * @throws IOException
 	 */
-	public List<PoiBean> putPoiBean(String tableName, byte[] startkey, byte[] endkey) throws IOException {
+	public List<PoiBean> putPoiBean(String tableName, Integer cache,byte[] startkey, byte[] endkey) throws IOException {
 		List<PoiBean> poiBeans = new ArrayList<PoiBean>();
 		HTableInterface table = connection.getTable(tableName);
 		Scan scan = new Scan(startkey, endkey);
+		scan.setCaching(cache);
 		ResultScanner rs = table.getScanner(scan);
 		putRow(poiBeans, rs);
 		if (rs != null) rs.close();

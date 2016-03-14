@@ -86,6 +86,9 @@ public class BytesUtil {
 	
 	public static void main(String[] args) {
 		//byte是一个字节保存的，有8个位，即8个0、1。
-		System.out.println(startkeyGen("城市").length);//16个byte（字节）
+		byte[] rowkey = BytesUtil.startkeyGen(3,"1","2","3","123456789012","4");//16*4+12=76个字节
+		System.out.println(rowkey.length);//16个byte（字节）
+		//16*2+12=44
+
 	}
 }
